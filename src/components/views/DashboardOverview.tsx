@@ -13,7 +13,10 @@ import {
   Plus,
   FileText,
   CheckCircle2,
-  Clock
+  Clock,
+  Globe,
+  Mail,
+  Phone
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -29,7 +32,13 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { Student, Teacher, Invoice, CBTExam, Announcement, UserRole } from '../../types';
+import { Student, Teacher, Invoice, CBTExam, Announcement, UserRole, SchoolSettings } from '../../types';
+import { useRealTime } from '../../context/RealTimeContext';
+import {
+  SECONDARY_SCHOOL_NAME,
+  PRIMARY_SCHOOL_NAME,
+  SCHOOL_CONTACT_DETAILS
+} from '../../utils/sectionHelpers';
 
 interface DashboardOverviewProps {
   students: Student[];
@@ -39,6 +48,7 @@ interface DashboardOverviewProps {
   announcements: Announcement[];
   onNavigate: (tab: any) => void;
   currentRole: UserRole;
+  schoolSettings?: SchoolSettings;
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
@@ -48,8 +58,26 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   cbtExams,
   announcements,
   onNavigate,
-  currentRole
+  currentRole,
+  schoolSettings: propSchoolSettings
 }) => {
+  const { schoolSettings: contextSchoolSettings } = useRealTime();
+  const schoolSettings = propSchoolSettings || contextSchoolSettings;
+
+  const activeSession = schoolSettings?.academicSession || '2025/2026 Academic Session';
+  const activeTerm = schoolSettings?.currentTerm || '2nd Term';
+  const activeSchoolName = currentRole === 'principal'
+    ? (schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME)
+    : currentRole === 'head_teacher'
+    ? (schoolSettings?.primarySchoolName || PRIMARY_SCHOOL_NAME)
+    : (schoolSettings?.schoolName || `${schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME} & Primary`);
+
+  const activeWebsite = schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website;
+  const activeEmailsDisplay = schoolSettings?.email
+    ? (schoolSettings.altEmail ? `${schoolSettings.email} or ${schoolSettings.altEmail}` : schoolSettings.email)
+    : SCHOOL_CONTACT_DETAILS.emailsDisplay;
+  const activePhoneDisplay = schoolSettings?.phone || SCHOOL_CONTACT_DETAILS.phoneDisplay;
+
   // Calculations
   const totalStudents = students.length * 208; // Scaling for realistic school figure (e.g. 1,248)
   const totalTeachers = teachers.length * 28;  // e.g. 84
@@ -106,35 +134,59 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     <div className="space-y-6">
       
       {/* Banner Greeting */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-900 via-slate-900 to-slate-950 p-6 text-white border border-slate-800 shadow-sm">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 text-white border border-slate-800 shadow-sm">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-semibold mb-2">
-              <Sparkles className="h-3.5 w-3.5 text-blue-400" /> KwikSchools Portal Active
+              <Sparkles className="h-3.5 w-3.5 text-blue-400" />
+              {activeSchoolName}
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
               {currentRoleConfig.welcome}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-              {currentRoleConfig.roleLabel} • 2025/2026 Academic Session • 2nd Term Overview
+              {currentRoleConfig.roleLabel} • {activeSession} • {activeTerm} Overview
             </p>
           </div>
           
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => onNavigate('academics')}
-              className="px-4 py-2 rounded-lg bg-white text-slate-900 font-semibold text-xs shadow-sm hover:bg-slate-100 transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-white text-slate-900 font-semibold text-xs shadow-sm hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer"
             >
               <FileText className="h-4 w-4 text-blue-600" />
               Generate AI Report Cards
             </button>
             <button
               onClick={() => onNavigate('cbt')}
-              className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#1e40af] text-white font-semibold text-xs shadow-sm transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#1e40af] text-white font-semibold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
               <Laptop className="h-4 w-4" />
               Manage CBT Tests
             </button>
+          </div>
+        </div>
+
+        {/* Institutional Contact Bar */}
+        <div className="relative z-10 mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <a
+              href={activeWebsite.startsWith('http') ? activeWebsite : `https://${activeWebsite}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-blue-300 transition"
+            >
+              <Globe className="h-3.5 w-3.5 text-blue-400" />
+              <span className="font-mono">{activeWebsite}</span>
+            </a>
+            <div className="flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="font-mono text-[11px]">{activeEmailsDisplay}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5 text-amber-400" />
+              <span className="font-mono text-[11px]">{activePhoneDisplay}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -390,7 +442,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <GraduationCap className="h-4 w-4 text-[#2563eb]" /> Grade Distribution
             </h3>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              2nd Term CA
+              {activeTerm} CA
             </span>
           </div>
           <p className="text-xs text-[#64748b] dark:text-slate-400 mb-2">

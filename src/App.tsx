@@ -166,6 +166,7 @@ function AppContent() {
                 announcements={INITIAL_ANNOUNCEMENTS}
                 onNavigate={setActiveTab}
                 currentRole={currentRole}
+                schoolSettings={schoolSettings}
               />
             )}
 

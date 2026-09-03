@@ -53,11 +53,11 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
   const [sectionFilter, setSectionFilter] = useState<'All' | 'Secondary' | 'Primary'>('All');
 
   // Available subjects & classes based on role
-  const availableSubjects = isPrincipal
+  const availableSubjects: string[] = (isPrincipal
     ? SECONDARY_SUBJECTS
     : isHeadTeacher
     ? PRIMARY_SUBJECTS
-    : [...SECONDARY_SUBJECTS, ...PRIMARY_SUBJECTS];
+    : [...SECONDARY_SUBJECTS, ...PRIMARY_SUBJECTS]).map((s) => s.name);
 
   const availableClasses = isPrincipal
     ? SECONDARY_CLASSES

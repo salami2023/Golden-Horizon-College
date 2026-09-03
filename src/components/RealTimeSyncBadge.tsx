@@ -36,19 +36,19 @@ export const RealTimeSyncBadge: React.FC = () => {
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs border ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[7px] font-bold transition-all shadow-xs border ${
             isConnected
               ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
               : 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
           }`}
           title="Click to view Real-Time Sync status & active users"
         >
-          <span className="relative flex h-2 w-2">
+          <span className="relative flex h-1.5 w-1.5">
             {isConnected && (
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             )}
             <span
-              className={`relative inline-flex rounded-full h-2 w-2 ${
+              className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
                 isConnected ? 'bg-emerald-500' : 'bg-amber-500'
               }`}
             ></span>
@@ -59,12 +59,12 @@ export const RealTimeSyncBadge: React.FC = () => {
           </span>
 
           {connectedPeers.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-emerald-200/60 dark:bg-emerald-800/60 text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-200/60 dark:bg-emerald-800/60 text-[6px] font-mono">
               {connectedPeers.length} {connectedPeers.length === 1 ? 'user' : 'users'}
             </span>
           )}
 
-          <ChevronDown className="h-3 w-3 opacity-60" />
+          <ChevronDown className="h-2.5 w-2.5 opacity-60" />
         </button>
 
         {/* Dropdown Panel */}

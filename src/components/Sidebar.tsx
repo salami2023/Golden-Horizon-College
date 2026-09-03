@@ -17,9 +17,17 @@ import {
   ChevronRight,
   ShieldCheck,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  Globe,
+  Phone
 } from 'lucide-react';
 import { UserRole, SchoolThemeConfig } from '../types';
+import { useRealTime } from '../context/RealTimeContext';
+import {
+  SECONDARY_SCHOOL_NAME,
+  PRIMARY_SCHOOL_NAME,
+  SCHOOL_CONTACT_DETAILS
+} from '../utils/sectionHelpers';
 
 export type ActiveTab =
   | 'dashboard'
@@ -54,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   themeConfig
 }) => {
+  const { schoolSettings } = useRealTime();
   const navItems = [
     {
       id: 'dashboard' as ActiveTab,
@@ -175,14 +184,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </button>
 
       {/* Brand Header */}
-      <div className={`flex items-center gap-2.5 pb-6 pt-6 border-b border-slate-800/80 ${isCollapsed ? 'px-4 justify-center' : 'px-6'}`}>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#2563eb] text-white font-bold">
+      <div className={`flex items-center gap-3 pb-5 pt-6 border-b border-slate-800/80 ${isCollapsed ? 'px-4 justify-center' : 'px-5'}`}>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 text-white font-bold shadow-md shadow-blue-500/20">
           <ShieldCheck className="h-5 w-5" />
         </div>
         {!isCollapsed && (
-          <span className="text-[20px] font-bold text-white tracking-tight">
-            KwikSchools
-          </span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[16px] font-black text-white tracking-tight leading-tight truncate">
+              Golden Horizon
+            </span>
+            <span className="text-[10px] text-blue-400 font-bold tracking-wider uppercase truncate">
+              {currentRole === 'principal'
+                ? 'College (Secondary)'
+                : currentRole === 'head_teacher'
+                ? 'Nursery & Primary'
+                : 'College & Primary'}
+            </span>
+          </div>
         )}
       </div>
 
@@ -231,20 +249,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Footer Role Info */}
+      {/* Footer Role & School Contact Info */}
       {!isCollapsed && (
-        <div className="p-4 m-3 rounded-xl bg-[#1e293b]/60 border border-slate-800/80">
-          <div className="flex items-center gap-2 text-[#2563eb] font-semibold text-xs mb-1">
+        <div className="p-3.5 m-3 rounded-xl bg-[#1e293b]/60 border border-slate-800/80 space-y-2">
+          <div className="flex items-center gap-2 text-[#2563eb] font-semibold text-xs">
             <Sparkles className="h-3.5 w-3.5" />
-            {currentRole === 'principal' ? 'Secondary Section' : currentRole === 'head_teacher' ? 'Primary & Nursery' : 'Portal Active'}
+            <span className="truncate font-bold">
+              {currentRole === 'principal'
+                ? (schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME)
+                : currentRole === 'head_teacher'
+                ? (schoolSettings?.primarySchoolName || PRIMARY_SCHOOL_NAME)
+                : (schoolSettings?.schoolName || 'Golden Horizon Schools')}
+            </span>
           </div>
-          <p className="text-[11px] text-[#94a3b8] font-medium uppercase tracking-wider">
-            {currentRole === 'principal'
-              ? 'Secondary Principal Portal'
-              : currentRole === 'head_teacher'
-              ? 'Head Teacher Portal'
-              : `${currentRole.replace('_', ' ')} Portal`}
-          </p>
+          <div className="space-y-1 text-[10px] text-slate-400">
+            <div className="flex items-center gap-1.5 truncate">
+              <Globe className="h-3 w-3 text-blue-400 shrink-0" />
+              <span className="truncate font-mono">{schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website}</span>
+            </div>
+            <div className="flex items-center gap-1.5 truncate">
+              <Phone className="h-3 w-3 text-emerald-400 shrink-0" />
+              <span className="truncate font-mono">{schoolSettings?.phone || SCHOOL_CONTACT_DETAILS.phoneNumbers[0]}</span>
+            </div>
+          </div>
         </div>
       )}
     </aside>

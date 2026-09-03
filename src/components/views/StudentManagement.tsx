@@ -31,7 +31,9 @@ import {
   SECONDARY_CLASSES,
   PRIMARY_CLASSES,
   isSecondaryClass,
-  isPrimaryClass
+  isPrimaryClass,
+  SECONDARY_SCHOOL_NAME,
+  PRIMARY_SCHOOL_NAME
 } from '../../utils/sectionHelpers';
 
 interface StudentManagementProps {
@@ -828,10 +830,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <Plus className="h-4 w-4 text-emerald-600" />
                 {isPrincipal
-                  ? 'Enrol New Secondary School Student'
+                  ? `Enrol New Student to ${SECONDARY_SCHOOL_NAME}`
                   : isHeadTeacher
-                  ? 'Enrol New Primary / Nursery Pupil'
-                  : 'Enrol New Student to KwikSchools'}
+                  ? `Enrol New Pupil to ${PRIMARY_SCHOOL_NAME}`
+                  : 'Enrol New Student to Golden Horizon Schools'}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400">
                 <X className="h-5 w-5" />

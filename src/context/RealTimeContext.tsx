@@ -28,7 +28,8 @@ import {
   INITIAL_HOMEWORK,
   INITIAL_BUS_ROUTES,
   INITIAL_HOSTELS,
-  INITIAL_BROADCASTS
+  INITIAL_BROADCASTS,
+  INITIAL_SCHOOL_SETTINGS
 } from '../data/mockSchoolData';
 
 interface SyncActor {
@@ -151,13 +152,16 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       'std-105': 'Present'
     }
   });
-  const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>({
-    schoolName: "KwikSchools International Academy",
-    motto: "Excellence in Knowledge, Innovation & Character",
-    academicSession: "2025/2026 Academic Session",
-    currentTerm: "2nd Term",
-    principalName: "Dr. Elizabeth Sterling",
-    gradingSystem: "Grade A: 70-100%, Grade B: 60-69%, Grade C: 50-59%, Grade D: 40-49%, Grade F: <40%"
+  const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>(() => {
+    try {
+      const cached = localStorage.getItem('golden_horizon_school_settings');
+      if (cached) {
+        return { ...INITIAL_SCHOOL_SETTINGS, ...JSON.parse(cached) };
+      }
+    } catch (e) {
+      console.warn('Could not read schoolSettings cache', e);
+    }
+    return INITIAL_SCHOOL_SETTINGS;
   });
   const [themeConfig, setThemeConfig] = useState<SchoolThemeConfig>({
     mode: 'light',
@@ -615,7 +619,15 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [sendMutation]);
 
   const updateSchoolSettings = useCallback(async (settings: Partial<SchoolSettings>, actor?: SyncActor) => {
-    setSchoolSettings((prev) => ({ ...prev, ...settings }));
+    setSchoolSettings((prev) => {
+      const updated = { ...prev, ...settings };
+      try {
+        localStorage.setItem('golden_horizon_school_settings', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to cache schoolSettings in localStorage', e);
+      }
+      return updated;
+    });
     await sendMutation('settings', 'update', settings, actor);
   }, [sendMutation]);
 

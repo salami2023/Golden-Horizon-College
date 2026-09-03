@@ -1,6 +1,6 @@
 {
   "name": "KwikSchools Management System",
-  "description": "Comprehensive school management system dashboard replica featuring student, staff, academic, finance, CBT, e-learning, and multi-role portals.",
+  "description": "Comprehensive school management system for Golden Horizon College (Secondary) and Golden Horizon Nursery and Primary School, featuring academics, CBT, finance, parent portal, and communication hub.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

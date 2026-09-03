@@ -57,11 +57,11 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
     ? PRIMARY_CLASSES
     : [...SECONDARY_CLASSES, ...PRIMARY_CLASSES];
 
-  const availableSubjects = isPrincipal
+  const availableSubjects: string[] = (isPrincipal
     ? SECONDARY_SUBJECTS
     : isHeadTeacher
     ? PRIMARY_SUBJECTS
-    : [...SECONDARY_SUBJECTS, ...PRIMARY_SUBJECTS];
+    : [...SECONDARY_SUBJECTS, ...PRIMARY_SUBJECTS]).map((s) => s.name);
 
   // New assignment form state
   const [title, setTitle] = useState('');

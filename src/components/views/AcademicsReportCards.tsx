@@ -19,7 +19,18 @@ import {
   X
 } from 'lucide-react';
 import { StudentReportCard, SubjectScore, Student, UserRole } from '../../types';
+import { useRealTime } from '../../context/RealTimeContext';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import {
+  filterStudentsByRole,
+  getSectionForRole,
+  isPrimaryClass,
+  isSecondaryClass,
+  getSchoolNameForClass,
+  SECONDARY_SCHOOL_NAME,
+  PRIMARY_SCHOOL_NAME,
+  SCHOOL_CONTACT_DETAILS
+} from '../../utils/sectionHelpers';
 
 interface AcademicsReportCardsProps {
   reportCards: StudentReportCard[];
@@ -38,11 +49,16 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
   onDeleteReportCard,
   currentRole = 'super_admin'
 }) => {
-  const [selectedCardId, setSelectedCardId] = useState<string>(reportCards[0]?.id || '');
+  const { schoolSettings } = useRealTime();
+  const roleSection = getSectionForRole(currentRole as UserRole);
+  const visibleReportCards: StudentReportCard[] = filterStudentsByRole<StudentReportCard>(reportCards, currentRole as UserRole);
+  const visibleStudents: Student[] = filterStudentsByRole<Student>(students, currentRole as UserRole);
+
+  const [selectedCardId, setSelectedCardId] = useState<string>(visibleReportCards[0]?.id || '');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiSuccessMessage, setAiSuccessMessage] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedStudentForNewCard, setSelectedStudentForNewCard] = useState<string>(students[0]?.id || '');
+  const [selectedStudentForNewCard, setSelectedStudentForNewCard] = useState<string>(visibleStudents[0]?.id || '');
 
   // Permission Check:
   // Admin, Principal, Head Teacher have full edit/delete/update access.
@@ -50,7 +66,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
   const canEditGrades = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'teacher'].includes(currentRole);
   const canDeleteOrAddCard = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
 
-  const activeCard = reportCards.find((r) => r.id === selectedCardId) || reportCards[0];
+  const activeCard = visibleReportCards.find((r) => r.id === selectedCardId) || visibleReportCards[0];
 
   // Grade calculation helper
   const calculateGrade = (total: number): SubjectScore['grade'] => {
@@ -114,18 +130,28 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
       alert('Access Denied: Only Administrator, Principal, and Head Teacher can initialize report cards.');
       return;
     }
-    const student = students.find((s) => s.id === selectedStudentForNewCard);
+    const student = visibleStudents.find((s) => s.id === selectedStudentForNewCard) || students.find((s) => s.id === selectedStudentForNewCard);
     if (!student) return;
 
-    const defaultSubjects = [
-      'Mathematics',
-      'English Language',
-      'Physics',
-      'Chemistry',
-      'Biology',
-      'Civic Education',
-      'Economics'
-    ];
+    const defaultSubjects = isPrimaryClass(student.classGroup)
+      ? [
+          'Numeracy / Mathematics',
+          'Literacy / English Studies',
+          'Basic Science & Technology',
+          'Social Studies & Civic Habits',
+          'Quantitative Reasoning',
+          'Verbal Reasoning',
+          'Creative & Cultural Arts (CCA)'
+        ]
+      : [
+          'Mathematics',
+          'English Language',
+          'Physics',
+          'Chemistry',
+          'Biology',
+          'Civic Education',
+          'Economics'
+        ];
 
     const newCard: StudentReportCard = {
       id: `rc-${Date.now()}`,
@@ -244,7 +270,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
     <div className="space-y-6">
       
       {/* Role Permission Status Banner */}
-      <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs ${
+      <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
         canEditGrades
           ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
           : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
@@ -255,6 +281,8 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
               <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>
                 <strong>Academic Grading Permissions Active:</strong> Authorized as <strong>{currentRole.replace('_', ' ').toUpperCase()}</strong> to enter CA scores, edit exam marks, and generate automated remarks.
+                {roleSection === 'secondary' && ' (Restricted to Secondary School: JSS 1 - SSS 3)'}
+                {roleSection === 'primary' && ' (Restricted to Primary & Nursery: Basic 1 - 5, Nursery)'}
               </span>
             </>
           ) : (
@@ -266,9 +294,16 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
             </>
           )}
         </div>
-        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
-        </span>
+        <div className="flex items-center gap-2">
+          {roleSection !== 'all' && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200 uppercase tracking-wider">
+              {roleSection === 'secondary' ? 'Secondary Section' : 'Primary Section'}
+            </span>
+          )}
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
+            Role: {currentRole}
+          </span>
+        </div>
       </div>
 
       {/* Header Bar */}
@@ -322,7 +357,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500 shrink-0">Selected Student Report:</span>
           <DropdownWithSearch
-            options={reportCards.map((card) => ({
+            options={visibleReportCards.map((card) => ({
               value: card.id,
               label: card.studentName,
               sublabel: `Admission: ${card.admissionNo} • Position: #${card.classPosition || 1}`,
@@ -355,19 +390,32 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
         <div className="printable-report border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
           
           {/* School Letterhead Header */}
-          <div className="border-b-2 border-emerald-600 pb-5 text-center space-y-1">
+          <div className="border-b-2 border-emerald-600 pb-5 text-center space-y-1.5">
             <div className="inline-flex items-center gap-2">
-              <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xl">
-                KS
+              <div className={`h-10 w-10 rounded-xl text-white flex items-center justify-center font-black text-base shadow-sm ${
+                isPrimaryClass(activeCard.classGroup) ? 'bg-amber-600' : 'bg-emerald-600'
+              }`}>
+                {isPrimaryClass(activeCard.classGroup) ? 'GHPS' : 'GHC'}
               </div>
               <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                KwikSchools International Academy
+                {isPrimaryClass(activeCard.classGroup)
+                  ? (schoolSettings?.primarySchoolName || PRIMARY_SCHOOL_NAME)
+                  : (schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME)}
               </h1>
             </div>
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
-              Excellence in Knowledge, Innovation & Character
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+              {isPrimaryClass(activeCard.classGroup)
+                ? 'Nurturing Young Minds for Global Impact • Early Years & Primary Education'
+                : 'Excellence in Knowledge, Innovation & Character • High School & Advanced Studies'}
             </p>
-            <p className="text-[11px] font-mono text-slate-400">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+              <span><strong>Web:</strong> {schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website}</span>
+              <span>•</span>
+              <span><strong>Email:</strong> {schoolSettings?.email || SCHOOL_CONTACT_DETAILS.emailsDisplay}</span>
+              <span>•</span>
+              <span><strong>Tel:</strong> {schoolSettings?.phone || SCHOOL_CONTACT_DETAILS.phoneDisplay}</span>
+            </div>
+            <p className="text-[11px] font-mono text-slate-400 pt-1">
               Official Terminal Student Assessment Progress Sheet • {activeCard.academicSession} {activeCard.term}
             </p>
           </div>
@@ -528,7 +576,9 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
 
               <div>
                 <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
-                  Principal's Decision & Signature
+                  {isPrimaryClass(activeCard.classGroup)
+                    ? (schoolSettings?.headTeacherName ? `Head Teacher's Decision & Signature (${schoolSettings.headTeacherName})` : "Head Teacher's Decision & Signature")
+                    : (schoolSettings?.principalName ? `Principal's Decision & Signature (${schoolSettings.principalName})` : "Principal's Decision & Signature")}
                 </h4>
                 <p className="text-slate-700 dark:text-slate-300 italic mt-1 bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   "{activeCard.principalRemark}"
@@ -572,7 +622,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
                   onChange={(e) => setSelectedStudentForNewCard(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 >
-                  {students.map((std) => (
+                  {visibleStudents.map((std) => (
                     <option key={std.id} value={std.id}>
                       {std.firstName} {std.lastName} ({std.admissionNo} - {std.classGroup})
                     </option>
@@ -581,7 +631,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 text-[11px]">
-                Report card will be initialized with standard core curriculum subjects (Maths, English, Sciences, Humanities) for 2nd Term 2024/2025.
+                Report card will be initialized with curriculum subjects for <strong>{roleSection === 'primary' ? 'Primary / Early Years' : 'Secondary'}</strong> curriculum.
               </div>
 
               <div className="pt-4 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">

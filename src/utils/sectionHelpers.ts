@@ -1,4 +1,4 @@
-import { UserRole } from '../types';
+import { UserRole, SchoolSettings } from '../types';
 
 export const SECONDARY_CLASSES = [
   'JSS 1 A',
@@ -157,4 +157,77 @@ export function filterTeachersByRole<T extends { formClass?: string; subjects: s
     });
   }
   return teachers;
+}
+
+export const SECONDARY_SCHOOL_NAME = 'Golden Horizon College';
+export const PRIMARY_SCHOOL_NAME = 'Golden Horizon Nursery and Primary School';
+
+export const SCHOOL_CONTACT_DETAILS = {
+  website: 'goldenhorizoncollege.org.ng',
+  emails: [
+    'info@goldenhorizoncollege.org.ng',
+    'admin@goldenhorizoncollege.org.ng'
+  ],
+  emailsDisplay: 'info@goldenhorizoncollege.org.ng or admin@goldenhorizoncollege.org.ng',
+  phoneNumbers: [
+    '+234 (814)-012-1575',
+    '+234 815 025 1809',
+    '+234 808 422 9418'
+  ],
+  phoneDisplay: '+234 (814)-012-1575, +234 815 025 1809, +234 808 422 9418'
+};
+
+export function getSchoolNameForClass(className?: string, settings?: Partial<SchoolSettings>): string {
+  const secondary = settings?.secondarySchoolName || SECONDARY_SCHOOL_NAME;
+  const primary = settings?.primarySchoolName || PRIMARY_SCHOOL_NAME;
+  if (!className) return secondary;
+  if (isPrimaryClass(className)) {
+    return primary;
+  }
+  return secondary;
+}
+
+export const COMBINED_SCHOOL_NAME = 'Golden Horizon College/Primary';
+
+export function getSchoolNameForRole(role?: UserRole, settings?: Partial<SchoolSettings>): string {
+  if (role === 'head_teacher') {
+    return settings?.primarySchoolName || PRIMARY_SCHOOL_NAME;
+  }
+  if (role === 'principal') {
+    return settings?.secondarySchoolName || SECONDARY_SCHOOL_NAME;
+  }
+  return settings?.schoolName || COMBINED_SCHOOL_NAME;
+}
+
+export function getSchoolContactDetails(settings?: Partial<SchoolSettings>) {
+  const website = settings?.website || SCHOOL_CONTACT_DETAILS.website;
+  const emails = settings?.email
+    ? [settings.email, ...(settings.altEmail ? [settings.altEmail] : [])]
+    : SCHOOL_CONTACT_DETAILS.emails;
+  const emailsDisplay = settings?.email
+    ? (settings.altEmail ? `${settings.email} or ${settings.altEmail}` : settings.email)
+    : SCHOOL_CONTACT_DETAILS.emailsDisplay;
+  const phoneNumbers = (settings?.phoneNumbers && settings.phoneNumbers.length > 0)
+    ? settings.phoneNumbers
+    : (settings?.phone ? settings.phone.split(',').map((p) => p.trim()).filter(Boolean) : SCHOOL_CONTACT_DETAILS.phoneNumbers);
+  const phoneDisplay = settings?.phone || SCHOOL_CONTACT_DETAILS.phoneDisplay;
+
+  return {
+    website,
+    emails,
+    emailsDisplay,
+    phoneNumbers,
+    phoneDisplay
+  };
+}
+
+export function getAcademicSessionAndTerm(settings?: Partial<SchoolSettings>) {
+  const academicSession = settings?.academicSession || '2025/2026 Academic Session';
+  const currentTerm = settings?.currentTerm || '2nd Term';
+  return {
+    academicSession,
+    currentTerm,
+    termSessionDisplay: `${academicSession} • ${currentTerm}`,
+    overviewLabel: `${academicSession} • ${currentTerm} Overview`
+  };
 }

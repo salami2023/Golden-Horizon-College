@@ -12,7 +12,8 @@ import {
   HomeworkAssignment,
   BusRoute,
   HostelRoom,
-  BroadcastLog
+  BroadcastLog,
+  SchoolSettings
 } from '../types';
 
 export const INITIAL_STUDENTS: Student[] = [
@@ -470,7 +471,7 @@ export const INITIAL_REPORT_CARDS: StudentReportCard[] = [
     attendanceDaysPresent: 62,
     totalSchoolDays: 63,
     formTeacherRemark: 'Amina is an exceptional student who consistently displays academic excellence and leadership qualities. Keep up the high standard!',
-    principalRemark: 'Outstanding performance. An exemplary ambassador for KwikSchools Academy.',
+    principalRemark: 'Outstanding performance. An exemplary ambassador for Golden Horizon College.',
     isPublished: true,
     subjectScores: [
       { subjectName: 'Mathematics', ca1: 14, ca2: 15, exam: 68, total: 97, grade: 'A', remark: 'Distinction' },
@@ -722,7 +723,7 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   {
     id: 'ann-1',
     title: 'Inter-House Sports Competition & Annual Cultural Day',
-    content: 'All parents, guardians, and students are hereby invited to KwikSchools Academy Annual Cultural Day & Inter-House Sports competition scheduled for November 12th at the School Sports Complex.',
+    content: 'All parents, guardians, and students are hereby invited to Golden Horizon Schools Annual Cultural Day & Inter-House Sports competition scheduled for November 12th at the School Sports Complex.',
     author: 'Principal Office',
     date: '2025-10-18',
     targetAudience: 'All',
@@ -915,7 +916,7 @@ export const INITIAL_BROADCASTS: BroadcastLog[] = [
     id: 'bc-1',
     channel: 'SMS',
     recipientGroup: 'Grade 10 A Parents',
-    message: 'Dear Parent, Mid-Term report cards for Grade 10 A have been published on the KwikSchools Parent Portal. Login to review.',
+    message: 'Dear Parent, Mid-Term report cards for Grade 10 A have been published on the Golden Horizon Parent Portal. Login to review.',
     sentAt: '2025-10-20 14:30',
     status: 'Delivered',
     totalRecipients: 32
@@ -957,4 +958,26 @@ export const INITIAL_BROADCASTS: BroadcastLog[] = [
     totalRecipients: 24
   }
 ];
+
+export const INITIAL_SCHOOL_SETTINGS: SchoolSettings = {
+  schoolName: 'Golden Horizon College/Primary',
+  secondarySchoolName: 'Golden Horizon College',
+  primarySchoolName: 'Golden Horizon Nursery and Primary School',
+  website: 'goldenhorizoncollege.org.ng',
+  email: 'info@goldenhorizoncollege.org.ng',
+  altEmail: 'admin@goldenhorizoncollege.org.ng',
+  phone: '+234 (814)-012-1575, +234 815 025 1809, +234 808 422 9418',
+  phoneNumbers: [
+    '+234 (814)-012-1575',
+    '+234 815 025 1809',
+    '+234 808 422 9418'
+  ],
+  motto: 'Excellence in Knowledge, Innovation & Character',
+  academicSession: '2025/2026 Academic Session',
+  currentTerm: '2nd Term',
+  principalName: 'Dr. Elizabeth Sterling',
+  headTeacherName: 'Mrs. Folashade Adeleke',
+  gradingSystem: 'Grade A: 70-100%, Grade B: 60-69%, Grade C: 50-59%, Grade D: 40-49%, Grade F: <40%'
+};
+
 

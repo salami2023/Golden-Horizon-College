@@ -16,7 +16,8 @@ import {
   INITIAL_HOMEWORK,
   INITIAL_BUS_ROUTES,
   INITIAL_HOSTELS,
-  INITIAL_BROADCASTS
+  INITIAL_BROADCASTS,
+  INITIAL_SCHOOL_SETTINGS
 } from "./src/data/mockSchoolData";
 import {
   Student,
@@ -83,12 +84,7 @@ const schoolState: ServerState = {
     }
   },
   schoolSettings: {
-    schoolName: "KwikSchools International Academy",
-    motto: "Excellence in Knowledge, Innovation & Character",
-    academicSession: "2025/2026 Academic Session",
-    currentTerm: "2nd Term",
-    principalName: "Dr. Elizabeth Sterling",
-    gradingSystem: "Grade A: 70-100%, Grade B: 60-69%, Grade C: 50-59%, Grade D: 40-49%, Grade F: <40%"
+    ...INITIAL_SCHOOL_SETTINGS
   },
   themeConfig: {
     mode: 'light',

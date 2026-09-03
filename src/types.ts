@@ -240,10 +240,18 @@ export interface BroadcastLog {
 
 export interface SchoolSettings {
   schoolName: string;
+  secondarySchoolName?: string;
+  primarySchoolName?: string;
+  website?: string;
+  email?: string;
+  altEmail?: string;
+  phone?: string;
+  phoneNumbers?: string[];
   motto: string;
   academicSession: string;
   currentTerm: string;
   principalName: string;
+  headTeacherName?: string;
   gradingSystem: string;
 }
 

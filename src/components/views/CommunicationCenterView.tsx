@@ -14,10 +14,17 @@ import {
   Trash2,
   Sparkles,
   GraduationCap,
-  Baby
+  Baby,
+  Globe,
+  Phone
 } from 'lucide-react';
 import { BroadcastLog, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import {
+  SECONDARY_SCHOOL_NAME,
+  PRIMARY_SCHOOL_NAME,
+  SCHOOL_CONTACT_DETAILS
+} from '../../utils/sectionHelpers';
 
 interface CommunicationCenterViewProps {
   broadcasts: BroadcastLog[];
@@ -201,23 +208,36 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
             {isPrincipal ? (
               <>
-                <GraduationCap className="h-6 w-6 text-indigo-600" /> Secondary School SMS & Broadcast Hub
+                <GraduationCap className="h-6 w-6 text-indigo-600" /> {SECONDARY_SCHOOL_NAME} - Broadcast Hub
               </>
             ) : isHeadTeacher ? (
               <>
-                <Baby className="h-6 w-6 text-amber-600" /> Primary & Nursery SMS & Communication Hub
+                <Baby className="h-6 w-6 text-amber-600" /> {PRIMARY_SCHOOL_NAME} - Communication Hub
               </>
             ) : (
-              'Bulk SMS, Email & WhatsApp Broadcasts'
+              'Golden Horizon Schools - Broadcast & Notification Center'
             )}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             {isPrincipal
-              ? 'Dispatch instant SMS notifications, WAEC/NECO alerts, fee reminders, and secondary updates.'
+              ? `Dispatch instant SMS notifications, WAEC/NECO alerts, and fee notices for ${SECONDARY_SCHOOL_NAME}.`
               : isHeadTeacher
-              ? 'Dispatch instant SMS notifications, nursery updates, pickup reminders, and primary announcements.'
-              : 'Dispatch instant notifications, fee reminders, bus notifications, and emergency alerts to parents & staff.'}
+              ? `Dispatch instant SMS notifications, nursery updates, and announcements for ${PRIMARY_SCHOOL_NAME}.`
+              : 'Dispatch instant SMS notifications, fee reminders, and urgent alerts across both sections.'}
           </p>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+            <span className="flex items-center gap-1 font-mono text-blue-600 dark:text-blue-400">
+              <Globe className="h-3 w-3" /> {SCHOOL_CONTACT_DETAILS.website}
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <Mail className="h-3 w-3 text-emerald-600" /> {SCHOOL_CONTACT_DETAILS.emails[0]}
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1 font-mono">
+              <Phone className="h-3 w-3 text-amber-600" /> {SCHOOL_CONTACT_DETAILS.phoneNumbers[0]}
+            </span>
+          </div>
         </div>
       </div>
 

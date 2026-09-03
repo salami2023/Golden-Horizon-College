@@ -3,7 +3,7 @@ import { Search, ChevronDown, Check, X } from 'lucide-react';
 
 export interface DropdownOption {
   value: string;
-  label: string;
+  label: string | React.ReactNode;
   sublabel?: string;
   badge?: string;
   avatar?: string;
@@ -21,11 +21,12 @@ interface DropdownWithSearchProps {
   className?: string;
   colorScheme?: 'indigo' | 'emerald' | 'blue' | 'purple' | 'amber' | 'slate';
   buttonLabel?: string;
+  disabled?: boolean;
 }
 
 export const DropdownWithSearch: React.FC<DropdownWithSearchProps> = ({
   label,
-  options,
+  options = [],
   value,
   onChange,
   placeholder = 'Select an option...',
@@ -33,7 +34,8 @@ export const DropdownWithSearch: React.FC<DropdownWithSearchProps> = ({
   onSearchSubmit,
   className = '',
   colorScheme = 'indigo',
-  buttonLabel = 'Search'
+  buttonLabel = 'Search',
+  disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,14 +60,40 @@ export const DropdownWithSearch: React.FC<DropdownWithSearchProps> = ({
     }
   }, [isOpen]);
 
-  const filteredOptions = options.filter(
-    (opt) =>
-      opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (opt.sublabel && opt.sublabel.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (opt.badge && opt.badge.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const safeOptions = Array.isArray(options) ? options.filter(Boolean) : [];
 
-  const selectedOption = options.find((opt) => opt.value === value);
+  const filteredOptions = safeOptions.filter((opt) => {
+    if (!opt) return false;
+    const query = (searchQuery || '').toLowerCase().trim();
+    if (!query) return true;
+
+    const labelStr =
+      typeof opt.label === 'string'
+        ? opt.label
+        : typeof opt.label === 'number'
+        ? String(opt.label)
+        : '';
+    const sublabelStr =
+      typeof opt.sublabel === 'string'
+        ? opt.sublabel
+        : opt.sublabel != null
+        ? String(opt.sublabel)
+        : '';
+    const badgeStr =
+      typeof opt.badge === 'string'
+        ? opt.badge
+        : opt.badge != null
+        ? String(opt.badge)
+        : '';
+
+    return (
+      labelStr.toLowerCase().includes(query) ||
+      sublabelStr.toLowerCase().includes(query) ||
+      badgeStr.toLowerCase().includes(query)
+    );
+  });
+
+  const selectedOption = safeOptions.find((opt) => opt && opt.value === value);
 
   const colorStyles = {
     indigo: {
@@ -138,8 +166,12 @@ export const DropdownWithSearch: React.FC<DropdownWithSearchProps> = ({
       <div className="flex items-center gap-1.5">
         {/* Dropdown Trigger Box */}
         <div
-          onClick={() => setIsOpen(!isOpen)}
-          className="min-w-[180px] max-w-xs sm:max-w-sm flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition shadow-sm select-none"
+          onClick={() => {
+            if (!disabled) setIsOpen(!isOpen);
+          }}
+          className={`min-w-[180px] max-w-xs sm:max-w-sm flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition shadow-sm select-none ${
+            disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-600'
+          }`}
         >
           <div className="flex items-center gap-2 overflow-hidden truncate">
             {selectedOption?.avatar && (
@@ -170,8 +202,11 @@ export const DropdownWithSearch: React.FC<DropdownWithSearchProps> = ({
         {/* Search Button beside Dropdown */}
         <button
           type="button"
+          disabled={disabled}
           onClick={handleSearchClick}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer ${colorStyles.btn}`}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shrink-0 ${
+            disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+          } ${colorStyles.btn}`}
           title="Search or filter options"
         >
           <Search className="h-3.5 w-3.5" />
