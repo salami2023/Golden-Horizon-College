@@ -18,10 +18,20 @@ import {
   Trash2,
   Edit2,
   Save,
-  X
+  X,
+  GraduationCap,
+  Baby
 } from 'lucide-react';
 import { CBTExam, CBTQuestion, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import {
+  SECONDARY_CLASSES,
+  PRIMARY_CLASSES,
+  SECONDARY_SUBJECTS,
+  PRIMARY_SUBJECTS,
+  isSecondaryClass,
+  isPrimaryClass
+} from '../../utils/sectionHelpers';
 
 interface CBTExamManagerProps {
   exams: CBTExam[];
@@ -38,6 +48,9 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
   onDeleteExam,
   currentRole = 'teacher'
 }) => {
+  const isPrincipal = currentRole === 'principal';
+  const isHeadTeacher = currentRole === 'head_teacher';
+
   const [activeTestExam, setActiveTestExam] = useState<CBTExam | null>(null);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
@@ -45,11 +58,26 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
   const [testScore, setTestScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
 
+  const availableSubjects = isPrincipal
+    ? SECONDARY_SUBJECTS.map((s) => s.name)
+    : isHeadTeacher
+    ? PRIMARY_SUBJECTS.map((s) => s.name)
+    : [...SECONDARY_SUBJECTS.map((s) => s.name), ...PRIMARY_SUBJECTS.map((s) => s.name)];
+
+  const availableClasses = isPrincipal
+    ? SECONDARY_CLASSES
+    : isHeadTeacher
+    ? PRIMARY_CLASSES
+    : [...SECONDARY_CLASSES, ...PRIMARY_CLASSES];
+
   // AI Exam Generator Form Modal State
   const [showGenModal, setShowGenModal] = useState(false);
   const [editingExam, setEditingExam] = useState<CBTExam | null>(null);
-  const [subject, setSubject] = useState('Computer Studies');
-  const [topic, setTopic] = useState('Data Structures & Algorithms');
+  const [subject, setSubject] = useState(availableSubjects[0] || 'Computer Studies');
+  const [targetClass, setTargetClass] = useState(availableClasses[0] || 'Grade 10 A');
+  const [topic, setTopic] = useState(
+    isHeadTeacher ? 'Basic Addition & Subtraction' : 'Data Structures & Algorithms'
+  );
   const [numQuestions, setNumQuestions] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -58,6 +86,9 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
   const [selectedExamFilter, setSelectedExamFilter] = useState('All');
 
   const filteredExams = exams.filter((exam) => {
+    if (isPrincipal && !isSecondaryClass(exam.classGroup)) return false;
+    if (isHeadTeacher && !isPrimaryClass(exam.classGroup)) return false;
+
     if (selectedExamFilter === 'All') return true;
     return exam.id === selectedExamFilter;
   });
@@ -121,7 +152,7 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
           subject,
           topic,
           numQuestions,
-          gradeLevel: 'Grade 10 Senior Secondary'
+          gradeLevel: isHeadTeacher ? 'Primary Basic 1-5' : 'Senior Secondary SSS'
         })
       });
 
@@ -139,7 +170,7 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
           id: `exam-${Date.now()}`,
           title: `${subject}: ${topic}`,
           subject,
-          classGroup: 'Grade 10 A',
+          classGroup: targetClass,
           durationMinutes: Math.max(10, numQuestions * 2),
           totalMarks: generatedQuestions.length * 10,
           questions: generatedQuestions,
@@ -178,20 +209,28 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
             <>
               <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
               <span>
-                <strong>CBT & E-Learning Authorization Active:</strong> Authorized as <strong>{currentRole.replace('_', ' ').toUpperCase()}</strong> to create, AI-generate questions, and update online CBT examinations.
+                {isPrincipal ? (
+                  <strong>Secondary Principal CBT Portal:</strong>
+                ) : isHeadTeacher ? (
+                  <strong>Primary Head Teacher CBT & Quiz Portal:</strong>
+                ) : (
+                  <strong>CBT & E-Learning Authorization Active:</strong>
+                )}{' '}
+                Authorized to create, AI-generate questions, and update online CBT assessments for{' '}
+                {isPrincipal ? 'Secondary School classes' : isHeadTeacher ? 'Primary & Nursery classes' : 'all classes'}.
               </span>
             </>
           ) : (
             <>
               <Lock className="h-4 w-4 text-slate-500 shrink-0" />
               <span>
-                <strong>Student Testing Mode:</strong> CBT exam creation and question editing is permitted for <strong>Teachers, Principal, and Administrators</strong>.
+                <strong>Student Testing Mode:</strong> CBT exam creation and question editing is permitted for <strong>Teachers, Head Teacher, Principal, and Administrators</strong>.
               </span>
             </>
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
+          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
         </span>
       </div>
 
@@ -199,16 +238,36 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <Laptop className="h-5 w-5 text-purple-600" /> Computer-Based Testing (CBT) Center
+            {isPrincipal ? (
+              <>
+                <GraduationCap className="h-5 w-5 text-indigo-600" /> Secondary School CBT Examination Portal
+              </>
+            ) : isHeadTeacher ? (
+              <>
+                <Baby className="h-5 w-5 text-amber-600" /> Primary & Nursery E-Learning & Quiz Center
+              </>
+            ) : (
+              <>
+                <Laptop className="h-5 w-5 text-purple-600" /> Computer-Based Testing (CBT) Center
+              </>
+            )}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Create online assessments, timed simulations, and AI-assisted syllabus question generation.
+            {isPrincipal
+              ? 'Create WAEC/NECO/JAMB standard timed mock exams and secondary CBT assessments.'
+              : isHeadTeacher
+              ? 'Create fun interactive quizzes, basic arithmetic drills, and primary school assessments.'
+              : 'Create online assessments, timed simulations, and AI-assisted syllabus question generation.'}
           </p>
         </div>
 
         {canManageCBT && (
           <button
-            onClick={() => setShowGenModal(true)}
+            onClick={() => {
+              setSubject(availableSubjects[0] || 'Computer Studies');
+              setTargetClass(availableClasses[0] || 'Grade 10 A');
+              setShowGenModal(true);
+            }}
             className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition flex items-center gap-1.5 shrink-0"
           >
             <Sparkles className="h-4 w-4" /> AI Generate CBT Assessment
@@ -433,12 +492,27 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
             <form onSubmit={handleGenerateAIExam} className="space-y-3 mt-4 text-xs">
               <div>
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Subject</label>
-                <input
-                  type="text"
-                  required
+                <DropdownWithSearch
+                  options={availableSubjects.map((s) => ({ value: s, label: s }))}
                   value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  onChange={(val) => setSubject(val)}
+                  placeholder="Select or search subject..."
+                  searchPlaceholder="Search academic subject..."
+                  colorScheme="purple"
+                  buttonLabel="Subject"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Target Class</label>
+                <DropdownWithSearch
+                  options={availableClasses.map((c) => ({ value: c, label: c }))}
+                  value={targetClass}
+                  onChange={(val) => setTargetClass(val)}
+                  placeholder="Select target class..."
+                  searchPlaceholder="Search class..."
+                  colorScheme="purple"
+                  buttonLabel="Class"
                 />
               </div>
 
@@ -449,6 +523,13 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
                   required
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
+                  placeholder={
+                    isPrincipal
+                      ? 'e.g. Organic Chemistry / Calculus'
+                      : isHeadTeacher
+                      ? 'e.g. Phonics & Letter Blends / Basic Arithmetic'
+                      : 'e.g. Curriculum Topic'
+                  }
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
               </div>

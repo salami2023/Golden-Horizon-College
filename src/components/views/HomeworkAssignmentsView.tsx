@@ -14,10 +14,20 @@ import {
   Edit2,
   Trash2,
   Save,
-  X
+  X,
+  GraduationCap,
+  Baby
 } from 'lucide-react';
 import { HomeworkAssignment, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import {
+  SECONDARY_CLASSES,
+  PRIMARY_CLASSES,
+  SECONDARY_SUBJECTS,
+  PRIMARY_SUBJECTS,
+  isSecondaryClass,
+  isPrimaryClass
+} from '../../utils/sectionHelpers';
 
 interface HomeworkAssignmentsViewProps {
   homeworkList: HomeworkAssignment[];
@@ -34,13 +44,29 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
   onDeleteHomework,
   currentRole = 'teacher'
 }) => {
+  const isPrincipal = currentRole === 'principal';
+  const isHeadTeacher = currentRole === 'head_teacher';
+
   const [showModal, setShowModal] = useState(false);
   const [editingHw, setEditingHw] = useState<HomeworkAssignment | null>(null);
 
+  // Class & subject pools
+  const availableClasses = isPrincipal
+    ? SECONDARY_CLASSES
+    : isHeadTeacher
+    ? PRIMARY_CLASSES
+    : [...SECONDARY_CLASSES, ...PRIMARY_CLASSES];
+
+  const availableSubjects = isPrincipal
+    ? SECONDARY_SUBJECTS
+    : isHeadTeacher
+    ? PRIMARY_SUBJECTS
+    : [...SECONDARY_SUBJECTS, ...PRIMARY_SUBJECTS];
+
   // New assignment form state
   const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('Mathematics');
-  const [classGroup, setClassGroup] = useState('Grade 10 A');
+  const [subject, setSubject] = useState(availableSubjects[0] || 'Mathematics');
+  const [classGroup, setClassGroup] = useState(availableClasses[0] || 'Grade 10 A');
   const [dueDate, setDueDate] = useState('2025-10-28');
   const [points, setPoints] = useState(20);
   const [description, setDescription] = useState('');
@@ -51,6 +77,14 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
   const [subjectFilter, setSubjectFilter] = useState('All');
 
   const filteredHomeworkList = homeworkList.filter((hw) => {
+    // Role-level section filter
+    if (isPrincipal && !isSecondaryClass(hw.classGroup)) {
+      return false;
+    }
+    if (isHeadTeacher && !isPrimaryClass(hw.classGroup)) {
+      return false;
+    }
+
     const matchesClass = classFilter === 'All' || hw.classGroup === classFilter;
     const matchesSubject = subjectFilter === 'All' || hw.subject === subjectFilter;
     return matchesClass && matchesSubject;
@@ -69,7 +103,13 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
       title,
       subject,
       classGroup,
-      teacherName: currentRole === 'teacher' ? 'Class Subject Teacher' : 'Academic Department',
+      teacherName: isPrincipal
+        ? 'Secondary Academic Faculty'
+        : isHeadTeacher
+        ? 'Primary & Early Years Staff'
+        : currentRole === 'teacher'
+        ? 'Class Subject Teacher'
+        : 'Academic Department',
       dueDate,
       assignedDate: new Date().toISOString().split('T')[0],
       maxPoints: points,
@@ -111,7 +151,15 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
             <>
               <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
               <span>
-                <strong>E-Learning & Assignment Management Active:</strong> Authorized as <strong>{currentRole.replace('_', ' ').toUpperCase()}</strong> to create, edit, and grade student homework and digital assignments.
+                {isPrincipal ? (
+                  <strong>Secondary Principal Homework Portal:</strong>
+                ) : isHeadTeacher ? (
+                  <strong>Primary Head Teacher Homework Portal:</strong>
+                ) : (
+                  <strong>Assignment Management Active:</strong>
+                )}{' '}
+                Authorized to create, edit, monitor, and grade coursework for{' '}
+                {isPrincipal ? 'Secondary School classes' : isHeadTeacher ? 'Primary & Nursery classes' : 'all classes'}.
               </span>
             </>
           ) : (
@@ -124,7 +172,7 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
+          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
         </span>
       </div>
 
@@ -134,17 +182,35 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-2">
             <BookOpen className="h-3.5 w-3.5 text-blue-600" /> Academic Tasks Portal
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-            Homework & Course Assignments
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+            {isPrincipal ? (
+              <>
+                <GraduationCap className="h-6 w-6 text-indigo-600" /> Secondary School Homework & Assignments
+              </>
+            ) : isHeadTeacher ? (
+              <>
+                <Baby className="h-6 w-6 text-amber-600" /> Primary & Nursery Homework & Activity Tasks
+              </>
+            ) : (
+              'Homework & Course Assignments'
+            )}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Create, collect, and review student coursework & take-home assignments.
+            {isPrincipal
+              ? 'Create, manage, and evaluate homework and projects for Junior & Senior Secondary classes.'
+              : isHeadTeacher
+              ? 'Create, manage, and evaluate take-home worksheets, handwriting, and fun exercises for Nursery and Basic 1-5.'
+              : 'Create, collect, and review student coursework & take-home assignments.'}
           </p>
         </div>
 
         {canManageHomework && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setSubject(availableSubjects[0] || 'Mathematics');
+              setClassGroup(availableClasses[0] || 'Grade 10 A');
+              setShowModal(true);
+            }}
             className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition flex items-center gap-1.5 shrink-0"
           >
             <Plus className="h-4 w-4" /> Create New Assignment
@@ -160,10 +226,7 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
             <DropdownWithSearch
               options={[
                 { value: 'All', label: 'All Classes' },
-                { value: 'Grade 10 A', label: 'Grade 10 A' },
-                { value: 'Grade 10 B', label: 'Grade 10 B' },
-                { value: 'Grade 11 Science', label: 'Grade 11 Science' },
-                { value: 'Grade 12 Art', label: 'Grade 12 Art' }
+                ...availableClasses.map((c) => ({ value: c, label: c }))
               ]}
               value={classFilter}
               onChange={(val) => setClassFilter(val)}
@@ -179,12 +242,7 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
             <DropdownWithSearch
               options={[
                 { value: 'All', label: 'All Subjects' },
-                { value: 'Mathematics', label: 'Mathematics' },
-                { value: 'English Language', label: 'English Language' },
-                { value: 'Physics', label: 'Physics' },
-                { value: 'Chemistry', label: 'Chemistry' },
-                { value: 'Biology', label: 'Biology' },
-                { value: 'Literature in English', label: 'Literature in English' }
+                ...availableSubjects.map((s) => ({ value: s, label: s }))
               ]}
               value={subjectFilter}
               onChange={(val) => setSubjectFilter(val)}
@@ -203,69 +261,77 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
 
       {/* Homework Cards List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filteredHomeworkList.map((hw) => {
-          const submissionPct = Math.round((hw.submissionsCount / hw.totalStudents) * 100);
-          return (
-            <div
-              key={hw.id}
-              className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-blue-500 transition group"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
-                    {hw.subject} • {hw.classGroup}
-                  </span>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-amber-500" /> Due: {hw.dueDate}
+        {filteredHomeworkList.length === 0 ? (
+          <div className="col-span-2 p-12 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="font-bold text-sm">No homework assignments found for this filter</p>
+            <p className="text-xs mt-1">Click &quot;Create New Assignment&quot; to publish new coursework.</p>
+          </div>
+        ) : (
+          filteredHomeworkList.map((hw) => {
+            const submissionPct = Math.round((hw.submissionsCount / hw.totalStudents) * 100);
+            return (
+              <div
+                key={hw.id}
+                className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-blue-500 transition group"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
+                      {hw.subject} • {hw.classGroup}
                     </span>
-                    {canManageHomework && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setEditingHw(hw)}
-                          className="p-1 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
-                          title="Edit Assignment"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(hw.id)}
-                          className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800"
-                          title="Delete Assignment"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )}
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-amber-500" /> Due: {hw.dueDate}
+                      </span>
+                      {canManageHomework && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingHw(hw)}
+                            className="p-1 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+                            title="Edit Assignment"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(hw.id)}
+                            className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800"
+                            title="Delete Assignment"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base mt-2 group-hover:text-blue-600 transition">
+                    {hw.title}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-3 leading-relaxed">
+                    {hw.description}
+                  </p>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                    <span className="text-slate-500">Submissions Tracked</span>
+                    <span className="text-slate-800 dark:text-slate-200">
+                      {hw.submissionsCount} / {hw.totalStudents} ({submissionPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${submissionPct}%` }}
+                    />
                   </div>
                 </div>
-
-                <h3 className="font-extrabold text-slate-900 dark:text-white text-base mt-2 group-hover:text-blue-600 transition">
-                  {hw.title}
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-3 leading-relaxed">
-                  {hw.description}
-                </p>
               </div>
-
-              <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                  <span className="text-slate-500">Submissions Tracked</span>
-                  <span className="text-slate-800 dark:text-slate-200">
-                    {hw.submissionsCount} / {hw.totalStudents} ({submissionPct}%)
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-blue-600 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${submissionPct}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Create Modal */}
@@ -289,7 +355,13 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Organic Chemistry Nomenclature Exercise"
+                  placeholder={
+                    isPrincipal
+                      ? 'e.g. Organic Chemistry Nomenclature & Hydrocarbons Exercise'
+                      : isHeadTeacher
+                      ? 'e.g. Phonics Blends Worksheet & Spelling Drill'
+                      : 'e.g. Weekly Homework Task'
+                  }
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
@@ -297,25 +369,27 @@ export const HomeworkAssignmentsView: React.FC<HomeworkAssignmentsViewProps> = (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Subject</label>
-                  <input
-                    type="text"
+                  <DropdownWithSearch
+                    options={availableSubjects.map((s) => ({ value: s, label: s }))}
                     value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    onChange={(val) => setSubject(val)}
+                    placeholder="Select subject..."
+                    searchPlaceholder="Search subject..."
+                    colorScheme="blue"
+                    buttonLabel="Subject"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Target Class</label>
-                  <select
+                  <DropdownWithSearch
+                    options={availableClasses.map((c) => ({ value: c, label: c }))}
                     value={classGroup}
-                    onChange={(e) => setClassGroup(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                  >
-                    <option value="Grade 10 A">Grade 10 A</option>
-                    <option value="Grade 10 B">Grade 10 B</option>
-                    <option value="Grade 11 Science">Grade 11 Science</option>
-                    <option value="Grade 12 Art">Grade 12 Art</option>
-                  </select>
+                    onChange={(val) => setClassGroup(val)}
+                    placeholder="Select class..."
+                    searchPlaceholder="Search class..."
+                    colorScheme="emerald"
+                    buttonLabel="Class"
+                  />
                 </div>
               </div>
 

@@ -16,6 +16,7 @@ import {
   Eye
 } from 'lucide-react';
 import { RealTimeAuditEvent, ConnectedPeer, UserRole } from '../../types';
+import { DropdownWithSearch } from '../DropdownWithSearch';
 
 interface AuditLogsViewProps {
   auditLogs: RealTimeAuditEvent[];
@@ -187,40 +188,48 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
           <div className="flex items-center gap-1.5">
             <Filter className="h-3.5 w-3.5 text-slate-400" />
             <span className="font-semibold text-slate-500">Role:</span>
-            <select
+            <DropdownWithSearch
+              options={[
+                { value: 'all', label: 'All Roles' },
+                { value: 'super_admin', label: 'Super Admin', badge: 'Admin' },
+                { value: 'principal', label: 'Principal', badge: 'Leadership' },
+                { value: 'head_teacher', label: 'Head Teacher', badge: 'Leadership' },
+                { value: 'bursar', label: 'Bursar', badge: 'Finance' },
+                { value: 'finance', label: 'Finance Staff', badge: 'Finance' },
+                { value: 'teacher', label: 'Teacher', badge: 'Academic' },
+                { value: 'parent', label: 'Parent', badge: 'Portal' },
+                { value: 'student', label: 'Student', badge: 'Portal' }
+              ]}
               value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-semibold text-xs"
-            >
-              <option value="all">All Roles</option>
-              <option value="super_admin">Super Admin</option>
-              <option value="principal">Principal</option>
-              <option value="head_teacher">Head Teacher</option>
-              <option value="bursar">Bursar</option>
-              <option value="finance">Finance</option>
-              <option value="teacher">Teacher</option>
-              <option value="parent">Parent</option>
-              <option value="student">Student</option>
-            </select>
+              onChange={(val) => setFilterRole(val)}
+              placeholder="Filter by role..."
+              searchPlaceholder="Search role..."
+              colorScheme="indigo"
+              buttonLabel="Role"
+            />
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="font-semibold text-slate-500">Action:</span>
-            <select
+            <DropdownWithSearch
+              options={[
+                { value: 'all', label: 'All Actions' },
+                { value: 'CREATE', label: 'CREATE Event', badge: 'Create' },
+                { value: 'UPDATE', label: 'UPDATE Event', badge: 'Update' },
+                { value: 'DELETE', label: 'DELETE Event', badge: 'Delete' },
+                { value: 'UNAUTHORIZED', label: 'Unauthorized / Denied', badge: 'Security' }
+              ]}
               value={filterAction}
-              onChange={(e) => setFilterAction(e.target.value)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-semibold text-xs"
-            >
-              <option value="all">All Actions</option>
-              <option value="CREATE">Create</option>
-              <option value="UPDATE">Update</option>
-              <option value="DELETE">Delete</option>
-              <option value="UNAUTHORIZED">Unauthorized/Denied</option>
-            </select>
+              onChange={(val) => setFilterAction(val)}
+              placeholder="Filter by action..."
+              searchPlaceholder="Search action..."
+              colorScheme="slate"
+              buttonLabel="Action"
+            />
           </div>
         </div>
       </div>

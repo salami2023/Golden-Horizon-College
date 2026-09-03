@@ -386,7 +386,7 @@ export const TransportHostelView: React.FC<TransportHostelViewProps> = ({
                   { value: 'All', label: 'All Hostel Blocks' },
                   ...hostels.map((h) => ({
                     value: h.id,
-                    label: `${h.blockName} - Room ${h.roomNumber}`,
+                    label: `${h.blockName} - Room ${h.roomNo}`,
                     sublabel: `Warden: ${h.wardenName} • Gender: ${h.gender}`,
                     badge: `${h.occupantsCount || 0}/${h.capacity} beds`
                   }))
@@ -488,6 +488,7 @@ export const TransportHostelView: React.FC<TransportHostelViewProps> = ({
               </div>
             );
           })}
+          </div>
         </div>
       )}
 
@@ -732,14 +733,18 @@ export const TransportHostelView: React.FC<TransportHostelViewProps> = ({
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Wing Gender</label>
-                  <select
+                  <DropdownWithSearch
+                    options={[
+                      { value: 'Female', label: 'Female Wing', badge: 'Female' },
+                      { value: 'Male', label: 'Male Wing', badge: 'Male' }
+                    ]}
                     value={hostelGender}
-                    onChange={(e) => setHostelGender(e.target.value as any)}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                  >
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                  </select>
+                    onChange={(val) => setHostelGender(val as any)}
+                    placeholder="Select gender wing..."
+                    searchPlaceholder="Search gender wing..."
+                    colorScheme="purple"
+                    buttonLabel="Select"
+                  />
                 </div>
               </div>
 

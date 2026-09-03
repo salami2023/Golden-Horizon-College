@@ -13,10 +13,20 @@ import {
   Lock,
   Save,
   AlertCircle,
-  X
+  X,
+  GraduationCap,
+  Baby
 } from 'lucide-react';
 import { Teacher, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import {
+  SECONDARY_SUBJECTS,
+  PRIMARY_SUBJECTS,
+  SECONDARY_CLASSES,
+  PRIMARY_CLASSES,
+  isSecondaryClass,
+  isPrimaryClass
+} from '../../utils/sectionHelpers';
 
 interface StaffManagementProps {
   teachers: Teacher[];
@@ -33,24 +43,71 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
   onDeleteTeacher,
   currentRole = 'super_admin'
 }) => {
+  const isPrincipal = currentRole === 'principal';
+  const isHeadTeacher = currentRole === 'head_teacher';
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+  const [sectionFilter, setSectionFilter] = useState<'All' | 'Secondary' | 'Primary'>('All');
+
+  // Available subjects & classes based on role
+  const availableSubjects = isPrincipal
+    ? SECONDARY_SUBJECTS
+    : isHeadTeacher
+    ? PRIMARY_SUBJECTS
+    : [...SECONDARY_SUBJECTS, ...PRIMARY_SUBJECTS];
+
+  const availableClasses = isPrincipal
+    ? SECONDARY_CLASSES
+    : isHeadTeacher
+    ? PRIMARY_CLASSES
+    : [...SECONDARY_CLASSES, ...PRIMARY_CLASSES];
 
   // New staff form
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('+234 800 123 4567');
-  const [qualification, setQualification] = useState('B.Ed / B.Sc Education');
-  const [subjectsText, setSubjectsText] = useState('Mathematics, Further Maths');
-  const [formClass, setFormClass] = useState('Grade 10 A');
+  const [qualification, setQualification] = useState(
+    isHeadTeacher ? 'NCE / B.Ed Primary Education' : 'B.Ed / B.Sc Education'
+  );
+  const [subjectsText, setSubjectsText] = useState(
+    isHeadTeacher ? 'Numeracy, Literacy' : 'Mathematics, Further Maths'
+  );
+  const [formClass, setFormClass] = useState(isHeadTeacher ? 'Basic 1' : 'Grade 10 A');
 
   // RBAC Permission: Administrator, School Principal, Head Teacher have full access
   const hasFullAccess = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('All');
 
   const filteredTeachers = teachers.filter((t) => {
+    // Filter by role section
+    if (isPrincipal) {
+      const isSec = (t.formClass && isSecondaryClass(t.formClass)) ||
+        t.subjects.some(s => SECONDARY_SUBJECTS.some(secS => secS.name.toLowerCase().includes(s.toLowerCase())));
+      if (!isSec && t.formClass && isPrimaryClass(t.formClass)) return false;
+    }
+
+    if (isHeadTeacher) {
+      const isPrim = (t.formClass && isPrimaryClass(t.formClass)) ||
+        t.subjects.some(s => PRIMARY_SUBJECTS.some(primS => primS.name.toLowerCase().includes(s.toLowerCase())));
+      if (!isPrim && t.formClass && isSecondaryClass(t.formClass)) return false;
+    }
+
+    if (!isPrincipal && !isHeadTeacher) {
+      if (sectionFilter === 'Secondary') {
+        const isSec = (t.formClass && isSecondaryClass(t.formClass)) ||
+          t.subjects.some(s => SECONDARY_SUBJECTS.some(secS => secS.name.toLowerCase().includes(s.toLowerCase())));
+        if (!isSec) return false;
+      }
+      if (sectionFilter === 'Primary') {
+        const isPrim = (t.formClass && isPrimaryClass(t.formClass)) ||
+          t.subjects.some(s => PRIMARY_SUBJECTS.some(primS => primS.name.toLowerCase().includes(s.toLowerCase())));
+        if (!isPrim) return false;
+      }
+    }
+
     const matchesSearch =
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.staffId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,7 +135,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
       email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@kwikschools.com`,
       phone: phone || '+234 800 123 4567',
       qualification,
-      subjects: subjectsText.split(',').map((s) => s.trim()),
+      subjects: subjectsText.split(',').map((s) => s.trim()).filter(Boolean),
       formClass,
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
       joinDate: new Date().toISOString().split('T')[0]
@@ -126,7 +183,15 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
             <>
               <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
               <span>
-                <strong>Full Access Granted:</strong> As an <strong>{currentRole.replace('_', ' ').toUpperCase()}</strong>, you have full authority to <strong>add, edit qualifications, assign classes, and delete</strong> teachers & staff.
+                {isPrincipal ? (
+                  <strong>Secondary Principal Portal:</strong>
+                ) : isHeadTeacher ? (
+                  <strong>Primary Head Teacher Portal:</strong>
+                ) : (
+                  <strong>Full Access Granted:</strong>
+                )}{' '}
+                You have full authority to <strong>add, edit qualifications, assign subjects/classes, and delete</strong>{' '}
+                {isPrincipal ? 'secondary teaching staff' : isHeadTeacher ? 'primary teaching staff' : 'teachers & staff'}.
               </span>
             </>
           ) : (
@@ -139,17 +204,33 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
+          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
         </span>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-blue-600" /> Academic Staff & Teachers Directory
+            {isPrincipal ? (
+              <>
+                <GraduationCap className="h-5 w-5 text-indigo-600" /> Secondary School Teaching Staff & Faculty
+              </>
+            ) : isHeadTeacher ? (
+              <>
+                <Baby className="h-5 w-5 text-amber-600" /> Primary & Early Years Teaching Faculty
+              </>
+            ) : (
+              <>
+                <UserCheck className="h-5 w-5 text-blue-600" /> Academic Staff & Teachers Directory
+              </>
+            )}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Manage subject allocation, form teacher assignments, and academic qualifications.
+            {isPrincipal
+              ? 'Manage secondary subject allocation, form tutors (JSS 1-3 & SSS 1-3), and teacher qualifications.'
+              : isHeadTeacher
+              ? 'Manage primary & nursery subject teachers, class teachers (Nursery to Basic 5), and qualifications.'
+              : 'Manage subject allocation, form teacher assignments, and academic qualifications.'}
           </p>
         </div>
 
@@ -158,10 +239,46 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
             onClick={() => setShowAddModal(true)}
             className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition flex items-center gap-1.5 shrink-0"
           >
-            <Plus className="h-4 w-4" /> Add Teaching Staff
+            <Plus className="h-4 w-4" /> {isPrincipal ? 'Add Secondary Teacher' : isHeadTeacher ? 'Add Primary Teacher' : 'Add Teaching Staff'}
           </button>
         )}
       </div>
+
+      {/* Admin Section Tabs */}
+      {!isPrincipal && !isHeadTeacher && (
+        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 w-fit">
+          <button
+            onClick={() => setSectionFilter('All')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              sectionFilter === 'All'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            All Staff ({teachers.length})
+          </button>
+          <button
+            onClick={() => setSectionFilter('Secondary')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              sectionFilter === 'Secondary'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <GraduationCap className="h-3.5 w-3.5" /> Secondary Faculty (Principal)
+          </button>
+          <button
+            onClick={() => setSectionFilter('Primary')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              sectionFilter === 'Primary'
+                ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Baby className="h-3.5 w-3.5" /> Primary & Nursery (Head Teacher)
+          </button>
+        </div>
+      )}
 
       {/* Search & Subject Filter Bar with Search Button */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
@@ -181,13 +298,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
           <DropdownWithSearch
             options={[
               { value: 'All', label: 'All Subject Areas' },
-              { value: 'Mathematics', label: 'Mathematics & Further Maths' },
-              { value: 'English', label: 'English & Literature' },
-              { value: 'Physics', label: 'Physics & Applied Sciences' },
-              { value: 'Chemistry', label: 'Chemistry' },
-              { value: 'Biology', label: 'Biology & Health Sciences' },
-              { value: 'Economics', label: 'Economics & Commerce' },
-              { value: 'Computer', label: 'Computer Science & ICT' }
+              ...availableSubjects.map((s) => ({ value: s, label: s }))
             ]}
             value={selectedSubjectFilter}
             onChange={(val) => setSelectedSubjectFilter(val)}
@@ -251,7 +362,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
                 <span className="font-bold flex items-center gap-1 text-slate-500">
                   <BookOpen className="h-3.5 w-3.5 text-blue-600" /> Subjects:
                 </span>
-                <div className="flex flex-wrap gap-1 justify-end">
+                <div className="flex flex-wrap gap-1 justify-end max-w-[65%]">
                   {tch.subjects.map((sub) => (
                     <span
                       key={sub}
@@ -274,8 +385,8 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
             </div>
 
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Mail className="h-3 w-3" /> {tch.email}
+              <span className="flex items-center gap-1 truncate max-w-[60%]">
+                <Mail className="h-3 w-3 shrink-0" /> {tch.email}
               </span>
               <span className="font-mono">{tch.phone}</span>
             </div>
@@ -286,7 +397,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
       {/* Edit Staff Modal */}
       {editingTeacher && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-6">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <Edit2 className="h-4 w-4 text-blue-600" /> Edit Staff ({editingTeacher.staffId})
@@ -340,13 +451,16 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Subjects (Comma separated)</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Assigned Subjects (Comma separated)</label>
                 <input
                   type="text"
                   value={editingTeacher.subjects.join(', ')}
-                  onChange={(e) => setEditingTeacher({ ...editingTeacher, subjects: e.target.value.split(',').map((s) => s.trim()) })}
+                  onChange={(e) => setEditingTeacher({ ...editingTeacher, subjects: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  e.g. {availableSubjects.slice(0, 3).join(', ')}
+                </span>
               </div>
 
               <div>
@@ -357,10 +471,9 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 >
                   <option value="">Unassigned</option>
-                  <option value="Grade 10 A">Grade 10 A</option>
-                  <option value="Grade 10 B">Grade 10 B</option>
-                  <option value="Grade 11 Science">Grade 11 Science</option>
-                  <option value="Grade 12 Art">Grade 12 Art</option>
+                  {availableClasses.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
 
@@ -424,10 +537,11 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
       {/* Add Staff Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-6">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <Plus className="h-4 w-4 text-blue-600" /> Add Teaching Staff Member
+                <Plus className="h-4 w-4 text-blue-600" />
+                {isPrincipal ? 'Add Secondary School Teacher' : isHeadTeacher ? 'Add Primary / Nursery Teacher' : 'Add Teaching Staff Member'}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400">
                 <X className="h-5 w-5" />
@@ -442,7 +556,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Mrs. Sarah Jenkins"
+                  placeholder={isHeadTeacher ? "e.g. Mrs. Joy Danladi" : "e.g. Mr. Chidi Okafor"}
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
@@ -453,7 +567,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="s.jenkins@kwikschools.com"
+                  placeholder="teacher@kwikschools.com"
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
@@ -479,27 +593,32 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Subjects (Comma separated)</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Teaching Subjects (Comma separated)</label>
                 <input
                   type="text"
                   value={subjectsText}
                   onChange={(e) => setSubjectsText(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Suggestions: {availableSubjects.slice(0, 4).join(', ')}
+                </span>
               </div>
 
               <div>
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Assign Form Teacher Class</label>
-                <select
+                <DropdownWithSearch
+                  options={[
+                    { value: '', label: 'Unassigned' },
+                    ...availableClasses.map((c) => ({ value: c, label: c }))
+                  ]}
                   value={formClass}
-                  onChange={(e) => setFormClass(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  <option value="Grade 10 A">Grade 10 A</option>
-                  <option value="Grade 10 B">Grade 10 B</option>
-                  <option value="Grade 11 Science">Grade 11 Science</option>
-                  <option value="Grade 12 Art">Grade 12 Art</option>
-                </select>
+                  onChange={(val) => setFormClass(val)}
+                  placeholder="Select assigned class..."
+                  searchPlaceholder="Search class..."
+                  colorScheme="blue"
+                  buttonLabel="Select"
+                />
               </div>
 
               <div className="pt-4 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">

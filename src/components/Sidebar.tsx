@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'timetable' as ActiveTab,
       label: 'School Timetable',
       icon: Calendar,
-      roles: ['super_admin', 'pioneer', 'head_teacher', 'principal', 'teacher', 'bursar', 'finance', 'parent', 'student'],
+      roles: ['super_admin', 'pioneer', 'principal', 'teacher', 'bursar', 'finance', 'parent', 'student'],
       badge: 'Schedule'
     },
     {
@@ -236,10 +236,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-4 m-3 rounded-xl bg-[#1e293b]/60 border border-slate-800/80">
           <div className="flex items-center gap-2 text-[#2563eb] font-semibold text-xs mb-1">
             <Sparkles className="h-3.5 w-3.5" />
-            Portal Active
+            {currentRole === 'principal' ? 'Secondary Section' : currentRole === 'head_teacher' ? 'Primary & Nursery' : 'Portal Active'}
           </div>
           <p className="text-[11px] text-[#94a3b8] font-medium uppercase tracking-wider">
-            {currentRole.replace('_', ' ')} Portal
+            {currentRole === 'principal'
+              ? 'Secondary Principal Portal'
+              : currentRole === 'head_teacher'
+              ? 'Head Teacher Portal'
+              : `${currentRole.replace('_', ' ')} Portal`}
           </p>
         </div>
       )}

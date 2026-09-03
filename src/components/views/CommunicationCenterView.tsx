@@ -12,7 +12,9 @@ import {
   ShieldCheck,
   Lock,
   Trash2,
-  Sparkles
+  Sparkles,
+  GraduationCap,
+  Baby
 } from 'lucide-react';
 import { BroadcastLog, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
@@ -30,16 +32,80 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
   onDeleteBroadcast,
   currentRole = 'super_admin'
 }) => {
+  const isPrincipal = currentRole === 'principal';
+  const isHeadTeacher = currentRole === 'head_teacher';
+
   const [channel, setChannel] = useState<'SMS' | 'Email' | 'WhatsApp'>('SMS');
-  const [recipientGroup, setRecipientGroup] = useState('All School Parents');
+  const [recipientGroup, setRecipientGroup] = useState(
+    isPrincipal
+      ? 'All Secondary School Parents'
+      : isHeadTeacher
+      ? 'All Primary & Nursery Parents'
+      : 'All School Parents'
+  );
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [historyChannelFilter, setHistoryChannelFilter] = useState('All');
 
   const filteredBroadcasts = broadcasts.filter((bc) => {
+    if (isPrincipal) {
+      const isPrimOnly = bc.recipientGroup.toLowerCase().includes('nursery') ||
+        bc.recipientGroup.toLowerCase().includes('basic') ||
+        bc.recipientGroup.toLowerCase().includes('primary');
+      if (isPrimOnly) return false;
+    }
+
+    if (isHeadTeacher) {
+      const isSecOnly = bc.recipientGroup.toLowerCase().includes('grade') ||
+        bc.recipientGroup.toLowerCase().includes('secondary') ||
+        bc.recipientGroup.toLowerCase().includes('jss') ||
+        bc.recipientGroup.toLowerCase().includes('sss');
+      if (isSecOnly) return false;
+    }
+
     if (historyChannelFilter === 'All') return true;
     return bc.channel === historyChannelFilter;
   });
+
+  // Role-specific recipient options
+  const recipientOptions = isPrincipal
+    ? [
+        { value: 'All Secondary School Parents', label: 'All Secondary School Parents (640)', badge: '640' },
+        { value: 'Junior Secondary (JSS 1-3) Parents', label: 'Junior Secondary (JSS 1-3) Parents (320)', badge: '320' },
+        { value: 'Senior Secondary (SSS 1-3) Parents', label: 'Senior Secondary (SSS 1-3) Parents (320)', badge: '320' },
+        { value: 'Grade 10 A Parents', label: 'Grade 10 A Parents (32)', badge: '32' },
+        { value: 'Grade 10 B Parents', label: 'Grade 10 B Parents (30)', badge: '30' },
+        { value: 'Grade 11 Science Parents', label: 'Grade 11 Science Parents (28)', badge: '28' },
+        { value: 'Grade 12 Art Parents', label: 'Grade 12 Art Parents (25)', badge: '25' },
+        { value: 'Secondary Academic Teachers', label: 'Secondary Teaching Faculty (48)', badge: '48' },
+        { value: 'Secondary Boarding House Parents', label: 'Secondary Boarding Parents (54)', badge: '54' },
+        { value: 'Secondary Fee Debtors', label: 'Secondary Outstanding Fee Debtors (38)', badge: '38' }
+      ]
+    : isHeadTeacher
+    ? [
+        { value: 'All Primary & Nursery Parents', label: 'All Primary & Nursery Parents (608)', badge: '608' },
+        { value: 'Nursery & Kindergarten Parents', label: 'Early Years (Nursery & KG) Parents (180)', badge: '180' },
+        { value: 'Basic 1 to Basic 5 Parents', label: 'Basic 1 - Basic 5 Parents (428)', badge: '428' },
+        { value: 'Basic 1 Parents', label: 'Basic 1 Parents (28)', badge: '28' },
+        { value: 'Basic 2 Parents', label: 'Basic 2 Parents (30)', badge: '30' },
+        { value: 'Basic 3 Parents', label: 'Basic 3 Parents (32)', badge: '32' },
+        { value: 'Basic 4 Parents', label: 'Basic 4 Parents (26)', badge: '26' },
+        { value: 'Basic 5 Parents', label: 'Basic 5 Parents (30)', badge: '30' },
+        { value: 'Primary School Teaching Staff', label: 'Primary Teaching Staff (36)', badge: '36' },
+        { value: 'Primary Shuttle Bus Parents', label: 'Primary Bus Shuttle Parents (45)', badge: '45' },
+        { value: 'Primary Fee Debtors', label: 'Primary Outstanding Fee Debtors (24)', badge: '24' }
+      ]
+    : [
+        { value: 'All School Parents', label: 'All School Parents (1,248)', badge: '1,248' },
+        { value: 'All Secondary School Parents', label: 'Secondary School Parents (640)', badge: '640' },
+        { value: 'All Primary & Nursery Parents', label: 'Primary & Nursery Parents (608)', badge: '608' },
+        { value: 'Grade 10 A Parents', label: 'Grade 10 A Parents (32)', badge: '32' },
+        { value: 'Basic 1 Parents', label: 'Basic 1 Parents (28)', badge: '28' },
+        { value: 'Boarding House Parents', label: 'Boarding House Parents (84)', badge: '84' },
+        { value: 'Bus Shuttle Riders Parents', label: 'Bus Shuttle Parents (92)', badge: '92' },
+        { value: 'All Academic Teachers', label: 'All Academic Staff (84)', badge: '84' },
+        { value: 'Outstanding Fee Debtors', label: 'Fee Debtors (62)', badge: '62' }
+      ];
 
   // RBAC Permission Check:
   // Admin, Principal, Head Teacher, Bursar, Finance have full access to SMS & Broadcasting.
@@ -69,7 +135,7 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
         message: messageText,
         sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
         status: 'Delivered',
-        totalRecipients: recipientGroup.includes('Grade 10') ? 32 : 1248
+        totalRecipients: recipientGroup.includes('Grade') || recipientGroup.includes('Basic') ? 32 : isPrincipal ? 640 : isHeadTeacher ? 608 : 1248
       };
 
       if (onSendBroadcast) onSendBroadcast(newBc);
@@ -101,7 +167,15 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
             <>
               <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
               <span>
-                <strong>Broadcast Access Authorized:</strong> As <strong>{currentRole.replace('_', ' ').toUpperCase()}</strong>, you have full access to dispatch and manage SMS, WhatsApp, and Email broadcasts.
+                {isPrincipal ? (
+                  <strong>Secondary Principal SMS Portal:</strong>
+                ) : isHeadTeacher ? (
+                  <strong>Primary Head Teacher SMS Portal:</strong>
+                ) : (
+                  <strong>Broadcast Access Authorized:</strong>
+                )}{' '}
+                You have full access to dispatch and manage SMS, WhatsApp, and Email broadcasts for{' '}
+                {isPrincipal ? 'Secondary School parents and staff' : isHeadTeacher ? 'Primary & Nursery parents and staff' : 'all parents and staff'}.
               </span>
             </>
           ) : (
@@ -114,7 +188,7 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
+          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
         </span>
       </div>
 
@@ -124,11 +198,25 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-2">
             <Send className="h-3.5 w-3.5 text-blue-600" /> Real-Time Mass Communication Engine
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-            Bulk SMS, Email & WhatsApp Broadcasts
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+            {isPrincipal ? (
+              <>
+                <GraduationCap className="h-6 w-6 text-indigo-600" /> Secondary School SMS & Broadcast Hub
+              </>
+            ) : isHeadTeacher ? (
+              <>
+                <Baby className="h-6 w-6 text-amber-600" /> Primary & Nursery SMS & Communication Hub
+              </>
+            ) : (
+              'Bulk SMS, Email & WhatsApp Broadcasts'
+            )}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Dispatch instant notifications, fee reminders, bus notifications, and emergency alerts to parents & staff.
+            {isPrincipal
+              ? 'Dispatch instant SMS notifications, WAEC/NECO alerts, fee reminders, and secondary updates.'
+              : isHeadTeacher
+              ? 'Dispatch instant SMS notifications, nursery updates, pickup reminders, and primary announcements.'
+              : 'Dispatch instant notifications, fee reminders, bus notifications, and emergency alerts to parents & staff.'}
           </p>
         </div>
       </div>
@@ -137,7 +225,7 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
         {/* Send Form */}
         <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm h-fit">
           <h3 className="font-extrabold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-blue-600" /> Dispatch New Message
+            <MessageSquare className="h-4 w-4 text-blue-600" /> Dispatch New Broadcast
           </h3>
 
           <form onSubmit={handleSend} className="space-y-4 text-xs">
@@ -166,14 +254,7 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
                 Target Recipient Group
               </label>
               <DropdownWithSearch
-                options={[
-                  { value: 'All School Parents', label: 'All School Parents (1,248)', badge: '1,248' },
-                  { value: 'Grade 10 A Parents', label: 'Grade 10 A Parents (32)', badge: '32' },
-                  { value: 'Boarding House Parents', label: 'Boarding House Parents (84)', badge: '84' },
-                  { value: 'Bus Shuttle Riders Parents', label: 'Bus Shuttle Parents (92)', badge: '92' },
-                  { value: 'All Academic Teachers', label: 'All Academic Staff (84)', badge: '84' },
-                  { value: 'Outstanding Fee Debtors', label: 'Fee Debtors (62)', badge: '62' }
-                ]}
+                options={recipientOptions}
                 value={recipientGroup}
                 onChange={(val) => setRecipientGroup(val)}
                 disabled={!hasBroadcastAccess}
@@ -199,94 +280,115 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
                 required
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                placeholder={hasBroadcastAccess ? "Type your announcement or fee reminder notice here..." : "Read-only access."}
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                placeholder={
+                  isPrincipal
+                    ? 'e.g. Dear Secondary School Parents, please be informed that SS3 mock examinations commence on Monday...'
+                    : isHeadTeacher
+                    ? 'e.g. Dear Primary Parents, please note that our Nursery & Primary Sports Fiesta is scheduled for this Friday...'
+                    : 'Type broadcast message text here...'
+                }
+                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            {hasBroadcastAccess && (
-              <button
-                type="submit"
-                disabled={isSending}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" />
-                {isSending ? 'Transmitting Broadcast...' : 'Send Broadcast Now'}
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={isSending || !messageText.trim() || !hasBroadcastAccess}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold transition flex items-center justify-center gap-2 shadow-md shadow-blue-600/20"
+            >
+              <Send className="h-4 w-4" />
+              {isSending ? 'Dispatching Broadcast...' : `Send ${channel} to ${recipientGroup}`}
+            </button>
           </form>
         </div>
 
-        {/* Transmission History */}
+        {/* Transmission Logs */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Clock className="h-4 w-4 text-emerald-600" /> Transmission History & Logs
-            </h3>
-            
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">
+                Transmission Logs & Delivery Status
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Audited history of outbound SMS, Email, and WhatsApp communications.
+              </p>
+            </div>
+
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 shrink-0">Filter Logs:</span>
+              <span className="text-xs font-bold text-slate-500">Filter Channel:</span>
               <DropdownWithSearch
                 options={[
                   { value: 'All', label: 'All Channels' },
                   { value: 'SMS', label: 'SMS Only' },
                   { value: 'WhatsApp', label: 'WhatsApp Only' },
-                  { value: 'Email', label: 'Email Broadcasts' }
+                  { value: 'Email', label: 'Email Only' }
                 ]}
                 value={historyChannelFilter}
                 onChange={(val) => setHistoryChannelFilter(val)}
-                placeholder="Filter logs..."
-                searchPlaceholder="Search channel logs..."
-                colorScheme="slate"
+                placeholder="Filter channel..."
+                searchPlaceholder="Search channel..."
+                colorScheme="blue"
                 buttonLabel="Filter"
               />
             </div>
           </div>
 
-          <div className="space-y-3">
-            {filteredBroadcasts.map((bc) => (
-              <div
-                key={bc.id}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition space-y-2"
-              >
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-extrabold text-[10px] uppercase">
-                      {bc.channel}
-                    </span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {bc.recipientGroup}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {bc.sentAt}
-                    </span>
-                    {hasBroadcastAccess && (
-                      <button
-                        onClick={() => handleDelete(bc.id)}
-                        className="p-1 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 transition"
-                        title="Delete log"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                  {bc.message}
-                </p>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                  <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> {bc.status} ({bc.totalRecipients} recipients)
-                  </span>
-                  <span className="font-mono text-[10px]">ID: {bc.id}</span>
-                </div>
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            {filteredBroadcasts.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">
+                <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="font-bold text-sm">No broadcast history found</p>
+                <p className="text-xs mt-1">Sent broadcasts will appear here.</p>
               </div>
-            ))}
+            ) : (
+              filteredBroadcasts.map((bc) => (
+                <div
+                  key={bc.id}
+                  className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                          bc.channel === 'SMS'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
+                            : bc.channel === 'WhatsApp'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                            : 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300'
+                        }`}
+                      >
+                        {bc.channel}
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        {bc.recipientGroup}
+                      </span>
+                      <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                        <Users className="h-3 w-3" /> {bc.totalRecipients} recipients
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> {bc.sentAt}
+                      </span>
+                      {hasBroadcastAccess && (
+                        <button
+                          onClick={() => handleDelete(bc.id)}
+                          className="text-slate-400 hover:text-rose-600 transition p-1"
+                          title="Delete Broadcast Log"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-sans leading-relaxed bg-white dark:bg-slate-900/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                    {bc.message}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

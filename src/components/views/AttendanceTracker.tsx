@@ -9,10 +9,18 @@ import {
   Check,
   Calendar,
   ShieldCheck,
-  Lock
+  Lock,
+  GraduationCap,
+  Baby
 } from 'lucide-react';
 import { Student, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import {
+  SECONDARY_CLASSES,
+  PRIMARY_CLASSES,
+  isSecondaryClass,
+  isPrimaryClass
+} from '../../utils/sectionHelpers';
 
 interface AttendanceTrackerProps {
   students: Student[];
@@ -29,7 +37,25 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
   onBatchMarkAttendance,
   currentRole = 'super_admin'
 }) => {
-  const [selectedClass, setSelectedClass] = useState('Grade 10 A');
+  const isPrincipal = currentRole === 'principal';
+  const isHeadTeacher = currentRole === 'head_teacher';
+
+  // Discover existing classes from student data
+  const existingClasses: string[] = Array.from(new Set(students.map((s) => s.classGroup))).filter(
+    (c): c is string => Boolean(c)
+  );
+
+  const availableClasses: string[] = isPrincipal
+    ? Array.from<string>(new Set([...SECONDARY_CLASSES, ...existingClasses.filter(c => isSecondaryClass(c))]))
+    : isHeadTeacher
+    ? Array.from<string>(new Set([...PRIMARY_CLASSES, ...existingClasses.filter(c => isPrimaryClass(c))]))
+    : Array.from<string>(new Set([...SECONDARY_CLASSES, ...PRIMARY_CLASSES, ...existingClasses]));
+
+  const initialClass = isHeadTeacher
+    ? (availableClasses.find(c => isPrimaryClass(c)) || 'Basic 1')
+    : (availableClasses.find(c => isSecondaryClass(c)) || 'Grade 10 A');
+
+  const [selectedClass, setSelectedClass] = useState(initialClass);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Local fallback state if no provider
@@ -88,7 +114,15 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
             <>
               <ShieldCheck className="h-4 w-4 text-indigo-600 shrink-0" />
               <span>
-                <strong>Attendance Register Permissions Active:</strong> Authorized as <strong>{currentRole.replace('_', ' ').toUpperCase()}</strong> to record attendance, mark late arrivals, and perform batch submissions.
+                {isPrincipal ? (
+                  <strong>Secondary Principal Portal:</strong>
+                ) : isHeadTeacher ? (
+                  <strong>Primary Head Teacher Portal:</strong>
+                ) : (
+                  <strong>Attendance Register Permissions Active:</strong>
+                )}{' '}
+                Authorized to record attendance, mark late arrivals, and perform batch submissions for{' '}
+                {isPrincipal ? 'Secondary School classes' : isHeadTeacher ? 'Primary & Nursery classes' : 'all classes'}.
               </span>
             </>
           ) : (
@@ -101,7 +135,7 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
+          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
         </span>
       </div>
 
@@ -109,10 +143,26 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <CalendarCheck className="h-5 w-5 text-indigo-600" /> Daily Attendance Register
+            {isPrincipal ? (
+              <>
+                <GraduationCap className="h-5 w-5 text-indigo-600" /> Secondary School Attendance Register
+              </>
+            ) : isHeadTeacher ? (
+              <>
+                <Baby className="h-5 w-5 text-amber-600" /> Primary & Early Years Attendance Register
+              </>
+            ) : (
+              <>
+                <CalendarCheck className="h-5 w-5 text-indigo-600" /> Daily Attendance Register
+              </>
+            )}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Mark daily class registers, track late arrivals, and generate attendance compliance analytics.
+            {isPrincipal
+              ? 'Mark daily registers for Junior & Senior Secondary classes and track student attendance compliance.'
+              : isHeadTeacher
+              ? 'Mark daily registers for Nursery, Reception, Kindergarten and Basic 1-5 classes.'
+              : 'Mark daily class registers, track late arrivals, and generate attendance compliance analytics.'}
           </p>
         </div>
 
@@ -121,7 +171,7 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="p-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
+            className="p-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold text-slate-900 dark:text-white"
           />
         </div>
       </div>
@@ -131,18 +181,17 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500 shrink-0">Class:</span>
           <DropdownWithSearch
-            options={[
-              { value: 'Grade 10 A', label: 'Grade 10 A', sublabel: 'Class Teacher: Mr. David Adeleke' },
-              { value: 'Grade 10 B', label: 'Grade 10 B', sublabel: 'Class Teacher: Mrs. Grace Bello' },
-              { value: 'Grade 11 Science', label: 'Grade 11 Science', sublabel: 'Class Teacher: Dr. Emeka Obi' },
-              { value: 'Grade 12 Art', label: 'Grade 12 Art', sublabel: 'Class Teacher: Ms. Folake Coker' }
-            ]}
+            options={availableClasses.map((c) => ({
+              value: c,
+              label: c,
+              sublabel: `${students.filter((s) => s.classGroup === c).length} students enrolled`
+            }))}
             value={selectedClass}
             onChange={(val) => setSelectedClass(val)}
             placeholder="Select class..."
             searchPlaceholder="Search class level or group..."
             colorScheme="indigo"
-            buttonLabel="Search Class"
+            buttonLabel="Select Class"
           />
         </div>
 
@@ -167,7 +216,7 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-          <div className="text-xs text-slate-500 font-bold uppercase">Total Enrolled in Class</div>
+          <div className="text-xs text-slate-500 font-bold uppercase">Enrolled in {selectedClass}</div>
           <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">{classStudents.length}</div>
         </div>
         <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
@@ -188,80 +237,115 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
 
       {/* Student Roster Attendance Table */}
       <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold text-slate-500 uppercase text-[10px]">
-              <th className="py-3 px-4">Student</th>
-              <th className="py-3 px-4">Admission No</th>
-              <th className="py-3 px-4">Parent Phone</th>
-              <th className="py-3 px-4">Current Status</th>
-              <th className="py-3 px-4 text-right">Quick Mark</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {classStudents.map((std) => {
-              const currentStatus = activeDayAttendance[std.id] || 'Present';
-              return (
-                <tr key={std.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={std.avatar}
-                        alt={std.firstName}
-                        className="h-8 w-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-                      />
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {std.firstName} {std.lastName}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="py-3 px-4 font-mono text-slate-500">{std.admissionNo}</td>
-
-                  <td className="py-3 px-4 font-mono text-slate-500">{std.parentPhone}</td>
-
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        currentStatus === 'Present'
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                          : currentStatus === 'Absent'
-                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                          : currentStatus === 'Late'
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                          : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                      }`}
-                    >
-                      {currentStatus}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-4 text-right">
-                    {canMarkAttendance ? (
-                      <div className="flex items-center justify-end gap-1">
-                        {(['Present', 'Absent', 'Late', 'Excused'] as const).map((st) => (
-                          <button
-                            key={st}
-                            onClick={() => handleMarkStatus(std.id, st)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-bold transition ${
-                              currentStatus === st
-                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                            }`}
-                          >
-                            {st}
-                          </button>
-                        ))}
+        {classStudents.length === 0 ? (
+          <div className="p-10 text-center text-slate-400">
+            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="font-bold text-sm">No students currently enrolled in {selectedClass}</p>
+            <p className="text-xs mt-1">Enrol students or pupils into this class from the Enrolment tab.</p>
+          </div>
+        ) : (
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold text-slate-500 uppercase text-[10px]">
+                <th className="py-3 px-4">Student</th>
+                <th className="py-3 px-4">Admission No</th>
+                <th className="py-3 px-4">Parent Phone</th>
+                <th className="py-3 px-4">Current Status</th>
+                <th className="py-3 px-4 text-right">Quick Mark</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {classStudents.map((std) => {
+                const currentStatus = activeDayAttendance[std.id] || 'Present';
+                return (
+                  <tr key={std.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={std.avatar}
+                          alt={std.firstName}
+                          className="h-8 w-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                        />
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {std.firstName} {std.lastName}
+                        </span>
                       </div>
-                    ) : (
-                      <span className="text-[10px] text-slate-400 italic">Read-only</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+
+                    <td className="py-3 px-4 font-mono text-slate-500">{std.admissionNo}</td>
+                    <td className="py-3 px-4 font-mono text-slate-500">{std.parentPhone}</td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          currentStatus === 'Present'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                            : currentStatus === 'Absent'
+                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
+                            : currentStatus === 'Late'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                            : 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
+                        }`}
+                      >
+                        {currentStatus}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4 text-right">
+                      {canMarkAttendance && (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleMarkStatus(std.id, 'Present')}
+                            className={`p-1.5 rounded-lg border transition ${
+                              currentStatus === 'Present'
+                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                            title="Mark Present"
+                          >
+                            <CheckCircle className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleMarkStatus(std.id, 'Late')}
+                            className={`p-1.5 rounded-lg border transition ${
+                              currentStatus === 'Late'
+                                ? 'bg-amber-500 text-white border-amber-500'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                            title="Mark Late"
+                          >
+                            <Clock className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleMarkStatus(std.id, 'Absent')}
+                            className={`p-1.5 rounded-lg border transition ${
+                              currentStatus === 'Absent'
+                                ? 'bg-rose-600 text-white border-rose-600'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                            title="Mark Absent"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleMarkStatus(std.id, 'Excused')}
+                            className={`p-1.5 rounded-lg border transition ${
+                              currentStatus === 'Excused'
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                            title="Mark Excused"
+                          >
+                            <AlertCircle className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
     </div>

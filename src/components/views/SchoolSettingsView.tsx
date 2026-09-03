@@ -13,6 +13,7 @@ import {
   Phone
 } from 'lucide-react';
 import { SchoolSettings, UserRole } from '../../types';
+import { DropdownWithSearch } from '../DropdownWithSearch';
 
 interface SchoolSettingsViewProps {
   settings?: SchoolSettings;
@@ -179,16 +180,20 @@ export const SchoolSettingsView: React.FC<SchoolSettingsViewProps> = ({
 
           <div>
             <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Active Term</label>
-            <select
+            <DropdownWithSearch
               disabled={!canManageSetup}
+              options={[
+                { value: '1st Term', label: '1st Term', sublabel: 'Autumn / Michaelmas', badge: '1st Term' },
+                { value: '2nd Term', label: '2nd Term', sublabel: 'Spring / Lent (Current)', badge: '2nd Term' },
+                { value: '3rd Term', label: '3rd Term', sublabel: 'Summer / Trinity', badge: '3rd Term' }
+              ]}
               value={currentTerm}
-              onChange={(e) => setCurrentTerm(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 disabled:opacity-60"
-            >
-              <option value="1st Term">1st Term (Autumn / Michaelmas)</option>
-              <option value="2nd Term">2nd Term (Spring / Lent)</option>
-              <option value="3rd Term">3rd Term (Summer / Trinity)</option>
-            </select>
+              onChange={(val) => setCurrentTerm(val)}
+              placeholder="Select active term..."
+              searchPlaceholder="Search term..."
+              colorScheme="emerald"
+              buttonLabel="Term"
+            />
           </div>
 
           <div>

@@ -106,6 +106,13 @@ function AppContent() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
 
+  // If head_teacher tries to view timetable, redirect to dashboard
+  useEffect(() => {
+    if (currentRole === 'head_teacher' && activeTab === 'timetable') {
+      setActiveTab('dashboard');
+    }
+  }, [currentRole, activeTab]);
+
   // Apply dark mode class to html element
   useEffect(() => {
     const root = document.documentElement;

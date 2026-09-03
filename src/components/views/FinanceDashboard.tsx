@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import { Invoice, PaymentTransaction, FeeItem, Student, UserRole } from '../../types';
+import { DropdownWithSearch } from '../DropdownWithSearch';
 
 interface FinanceDashboardProps {
   invoices: Invoice[];
@@ -45,6 +46,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'invoices' | 'debtors' | 'transactions' | 'fees'>('invoices');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddInvoiceModal, setShowAddInvoiceModal] = useState(false);
@@ -75,10 +77,13 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
 
   const debtorsList = invoices.filter((i) => i.balanceDue > 0);
 
-  const filteredInvoices = invoices.filter((inv) =>
-    inv.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    inv.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesSearch =
+      inv.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inv.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || inv.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleRecordPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,15 +283,35 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
       {/* Invoices & Debtors Table View */}
       {(activeTab === 'invoices' || activeTab === 'debtors') && (
         <div className="space-y-3">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search invoice number or student name..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search invoice number or student name..."
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 shrink-0">Status:</span>
+              <DropdownWithSearch
+                options={[
+                  { value: 'All', label: 'All Statuses' },
+                  { value: 'Paid', label: 'Paid in Full', badge: 'Paid' },
+                  { value: 'Partial', label: 'Partially Paid', badge: 'Partial' },
+                  { value: 'Unpaid', label: 'Unpaid / Outstanding', badge: 'Unpaid' }
+                ]}
+                value={statusFilter}
+                onChange={(val) => setStatusFilter(val)}
+                placeholder="Filter by status..."
+                searchPlaceholder="Search payment status..."
+                colorScheme="amber"
+                buttonLabel="Filter Status"
+              />
+            </div>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
@@ -444,16 +469,20 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
 
               <div>
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Payment Method</label>
-                <select
+                <DropdownWithSearch
+                  options={[
+                    { value: 'Bank Transfer', label: 'Bank Direct Transfer', badge: 'Bank' },
+                    { value: 'Cash Deposit', label: 'Cash Deposit at Bursary', badge: 'Cash' },
+                    { value: 'POS Terminal', label: 'POS Card Payment', badge: 'POS' },
+                    { value: 'Online Portal', label: 'Online Parent Gateway', badge: 'Online' }
+                  ]}
                   value={payMethod}
-                  onChange={(e) => setPayMethod(e.target.value as any)}
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  <option value="Bank Transfer">Bank Direct Transfer</option>
-                  <option value="Cash Deposit">Cash Deposit at Bursary</option>
-                  <option value="POS Terminal">POS Card Payment</option>
-                  <option value="Online Portal">Online Parent Gateway</option>
-                </select>
+                  onChange={(val) => setPayMethod(val as any)}
+                  placeholder="Select payment method..."
+                  searchPlaceholder="Search method..."
+                  colorScheme="emerald"
+                  buttonLabel="Method"
+                />
               </div>
 
               <div>
@@ -502,17 +531,20 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
             <form onSubmit={handleCreateInvoice} className="space-y-3 mt-4 text-xs">
               <div>
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Select Student</label>
-                <select
+                <DropdownWithSearch
+                  options={students.map((std) => ({
+                    value: std.id,
+                    label: `${std.firstName} ${std.lastName}`,
+                    sublabel: `${std.admissionNo} • ${std.classGroup}`,
+                    badge: std.classGroup
+                  }))}
                   value={selectedStudentForInvoice}
-                  onChange={(e) => setSelectedStudentForInvoice(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  {students.map((std) => (
-                    <option key={std.id} value={std.id}>
-                      {std.firstName} {std.lastName} ({std.admissionNo} - {std.classGroup})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedStudentForInvoice(val)}
+                  placeholder="Select student..."
+                  searchPlaceholder="Search by name, admission no, class..."
+                  colorScheme="amber"
+                  buttonLabel="Find Student"
+                />
               </div>
 
               <div>

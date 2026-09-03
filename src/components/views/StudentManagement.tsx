@@ -20,10 +20,19 @@ import {
   ShieldCheck,
   Lock,
   Save,
-  AlertCircle
+  AlertCircle,
+  GraduationCap,
+  Baby,
+  School
 } from 'lucide-react';
 import { Student, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import {
+  SECONDARY_CLASSES,
+  PRIMARY_CLASSES,
+  isSecondaryClass,
+  isPrimaryClass
+} from '../../utils/sectionHelpers';
 
 interface StudentManagementProps {
   students: Student[];
@@ -45,15 +54,30 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All'); // All, Boarders, Bus, Debtors
+  const [sectionFilter, setSectionFilter] = useState<'All' | 'Secondary' | 'Primary'>('All');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Custom class creation state in modal
+  const [isCustomClass, setIsCustomClass] = useState(false);
+  const [customClassName, setCustomClassName] = useState('');
+
+  // Default class options based on role
+  const availableClassOptions =
+    currentRole === 'principal'
+      ? SECONDARY_CLASSES
+      : currentRole === 'head_teacher'
+      ? PRIMARY_CLASSES
+      : [...SECONDARY_CLASSES, ...PRIMARY_CLASSES];
+
   // New Student Form State
   const [newFirstName, setNewFirstName] = useState('');
   const [newLastName, setNewLastName] = useState('');
-  const [newClassGroup, setNewClassGroup] = useState('Grade 10 A');
+  const [newClassGroup, setNewClassGroup] = useState(
+    currentRole === 'head_teacher' ? 'Basic 1' : 'Grade 10 A'
+  );
   const [newGender, setNewGender] = useState<'Male' | 'Female'>('Male');
   const [newParentName, setNewParentName] = useState('');
   const [newParentPhone, setNewParentPhone] = useState('');
@@ -67,6 +91,20 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const effectiveSearch = externalSearch || searchTerm;
 
   const filteredStudents = students.filter((std) => {
+    // Role based strict section filtering
+    if (currentRole === 'principal' && !isSecondaryClass(std.classGroup)) {
+      return false;
+    }
+    if (currentRole === 'head_teacher' && !isPrimaryClass(std.classGroup)) {
+      return false;
+    }
+
+    // Admin section toggle
+    if (currentRole !== 'principal' && currentRole !== 'head_teacher') {
+      if (sectionFilter === 'Secondary' && !isSecondaryClass(std.classGroup)) return false;
+      if (sectionFilter === 'Primary' && !isPrimaryClass(std.classGroup)) return false;
+    }
+
     const matchesSearch =
       std.firstName.toLowerCase().includes(effectiveSearch.toLowerCase()) ||
       std.lastName.toLowerCase().includes(effectiveSearch.toLowerCase()) ||
@@ -91,14 +129,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     }
     if (!newFirstName || !newLastName) return;
 
+    const finalClassGroup = isCustomClass && customClassName.trim() ? customClassName.trim() : newClassGroup;
+
     const newStudent: Student = {
       id: `std-${Date.now()}`,
       admissionNo: `KS/2025/${Math.floor(100 + Math.random() * 900)}`,
       firstName: newFirstName,
       lastName: newLastName,
       gender: newGender,
-      dob: '2008-05-12',
-      classGroup: newClassGroup,
+      dob: currentRole === 'head_teacher' ? '2018-05-12' : '2008-05-12',
+      classGroup: finalClassGroup,
       parentName: newParentName || 'Parent / Guardian',
       parentPhone: newParentPhone || '+234 800 000 0000',
       parentEmail: newParentEmail || `${newFirstName.toLowerCase()}@example.com`,
@@ -124,6 +164,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     setNewParentEmail('');
     setNewIsBoarder(false);
     setNewIsBusEnrolled(false);
+    setIsCustomClass(false);
+    setCustomClassName('');
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -153,6 +195,9 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     setDeletingStudent(null);
   };
 
+  const isPrincipal = currentRole === 'principal';
+  const isHeadTeacher = currentRole === 'head_teacher';
+
   return (
     <div className="space-y-6">
       {/* Role Permission Banner */}
@@ -166,7 +211,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             <>
               <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>
-                <strong>Full Access Granted:</strong> As an <strong>{currentRole.replace('_', ' ').toUpperCase()}</strong>, you have full authority to <strong>add, edit, update parent details, and delete</strong> student records in real time.
+                {isPrincipal ? (
+                  <strong>Secondary School Principal Portal:</strong>
+                ) : isHeadTeacher ? (
+                  <strong>Primary School Head Teacher Portal:</strong>
+                ) : (
+                  <strong>Full Administrative Access:</strong>
+                )}{' '}
+                You have full authority to <strong>add, edit, update parent details, create classes, and delete</strong>{' '}
+                {isPrincipal ? 'secondary student' : isHeadTeacher ? 'primary & nursery pupil' : 'student'} records.
               </span>
             </>
           ) : (
@@ -179,7 +232,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
+          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
         </span>
       </div>
 
@@ -187,22 +240,78 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <Users className="h-5 w-5 text-emerald-600" /> Student Information Roster & Parent Registry
+            {isPrincipal ? (
+              <>
+                <GraduationCap className="h-5 w-5 text-indigo-600" /> Secondary School Student Directory & Parents
+              </>
+            ) : isHeadTeacher ? (
+              <>
+                <Baby className="h-5 w-5 text-amber-600" /> Primary & Nursery Pupils Directory & Parents
+              </>
+            ) : (
+              <>
+                <Users className="h-5 w-5 text-emerald-600" /> Student Information Roster & Parent Registry
+              </>
+            )}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Manage student records, bus shuttle enrolment, boarding house rooms, and verified parent contacts.
+            {isPrincipal
+              ? 'Manage Junior Secondary (JSS 1-3) & Senior Secondary (SSS 1-3 / Grade 10-12) students, hostels, and verified parents.'
+              : isHeadTeacher
+              ? 'Manage Early Years (Nursery, Reception, Kindergarten, Nursery 1-2) and Primary (Basic 1 to Basic 5) pupils and parents.'
+              : 'Manage whole-school student records, bus shuttle enrolment, boarding house rooms, and verified parent contacts.'}
           </p>
         </div>
 
         {hasFullAccess && (
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setIsCustomClass(false);
+              setCustomClassName('');
+              setShowAddModal(true);
+            }}
             className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 shrink-0"
           >
-            <Plus className="h-4 w-4" /> Enrol New Student
+            <Plus className="h-4 w-4" /> {isPrincipal ? 'Enrol Secondary Student' : isHeadTeacher ? 'Enrol Primary / Nursery Pupil' : 'Enrol New Student'}
           </button>
         )}
       </div>
+
+      {/* Admin Section Tabs if not restricted by role */}
+      {!isPrincipal && !isHeadTeacher && (
+        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 w-fit">
+          <button
+            onClick={() => setSectionFilter('All')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              sectionFilter === 'All'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            All Sections ({students.length})
+          </button>
+          <button
+            onClick={() => setSectionFilter('Secondary')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              sectionFilter === 'Secondary'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <GraduationCap className="h-3.5 w-3.5" /> Secondary (Principal)
+          </button>
+          <button
+            onClick={() => setSectionFilter('Primary')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              sectionFilter === 'Primary'
+                ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Baby className="h-3.5 w-3.5" /> Primary & Nursery (Head Teacher)
+          </button>
+        </div>
+      )}
 
       {/* Search & Filter Matrix */}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
@@ -214,7 +323,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search name, admission no, parent..."
+            placeholder={isHeadTeacher ? "Search pupil, class, parent..." : "Search student, admission no, parent..."}
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
@@ -227,10 +336,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             <DropdownWithSearch
               options={[
                 { value: 'All', label: 'All Classes' },
-                { value: 'Grade 10 A', label: 'Grade 10 A' },
-                { value: 'Grade 10 B', label: 'Grade 10 B' },
-                { value: 'Grade 11 Science', label: 'Grade 11 Science' },
-                { value: 'Grade 12 Art', label: 'Grade 12 Art' }
+                ...availableClassOptions.map((c) => ({ value: c, label: c }))
               ]}
               value={classFilter}
               onChange={(val) => setClassFilter(val)}
@@ -573,10 +679,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     onChange={(e) => setEditingStudent({ ...editingStudent, classGroup: e.target.value })}
                     className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                   >
-                    <option value="Grade 10 A">Grade 10 A</option>
-                    <option value="Grade 10 B">Grade 10 B</option>
-                    <option value="Grade 11 Science">Grade 11 Science</option>
-                    <option value="Grade 12 Art">Grade 12 Art</option>
+                    {availableClassOptions.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                    {!availableClassOptions.includes(editingStudent.classGroup) && (
+                      <option value={editingStudent.classGroup}>{editingStudent.classGroup}</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -715,10 +823,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       {/* Enrolment Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden p-6">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <Plus className="h-4 w-4 text-emerald-600" /> Enrol New Student to KwikSchools
+                <Plus className="h-4 w-4 text-emerald-600" />
+                {isPrincipal
+                  ? 'Enrol New Secondary School Student'
+                  : isHeadTeacher
+                  ? 'Enrol New Primary / Nursery Pupil'
+                  : 'Enrol New Student to KwikSchools'}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400">
                 <X className="h-5 w-5" />
@@ -735,7 +848,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     value={newFirstName}
                     onChange={(e) => setNewFirstName(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                    placeholder="e.g. Fatima"
+                    placeholder={isHeadTeacher ? "e.g. Somto" : "e.g. Fatima"}
                   />
                 </div>
                 <div>
@@ -746,35 +859,74 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     value={newLastName}
                     onChange={(e) => setNewLastName(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                    placeholder="e.g. Hassan"
+                    placeholder="e.g. Adeleke"
                   />
                 </div>
               </div>
 
+              {/* Class Group Selection & Creation */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                    Class Group Assignment
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomClass(!isCustomClass)}
+                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    {isCustomClass ? '← Choose Existing Class' : '+ Create New Class'}
+                  </button>
+                </div>
+
+                {isCustomClass ? (
+                  <div>
+                    <input
+                      type="text"
+                      required={isCustomClass}
+                      value={customClassName}
+                      onChange={(e) => setCustomClassName(e.target.value)}
+                      placeholder={
+                        isPrincipal
+                          ? 'e.g. SSS 1 Commercial, JSS 2 C'
+                          : isHeadTeacher
+                          ? 'e.g. Nursery 2 B, Basic 4 Gold, Playgroup'
+                          : 'Enter custom class name...'
+                      }
+                      className="w-full p-2 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      This will create and assign this new class in the {isPrincipal ? 'Secondary' : isHeadTeacher ? 'Primary' : 'School'} roster.
+                    </span>
+                  </div>
+                ) : (
+                  <DropdownWithSearch
+                    options={availableClassOptions.map((c) => ({ value: c, label: c }))}
+                    value={newClassGroup}
+                    onChange={(val) => setNewClassGroup(val)}
+                    placeholder="Select class..."
+                    searchPlaceholder="Search class..."
+                    colorScheme="emerald"
+                    buttonLabel="Select"
+                  />
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Class Group</label>
-                  <select
-                    value={newClassGroup}
-                    onChange={(e) => setNewClassGroup(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                  >
-                    <option value="Grade 10 A">Grade 10 A</option>
-                    <option value="Grade 10 B">Grade 10 B</option>
-                    <option value="Grade 11 Science">Grade 11 Science</option>
-                    <option value="Grade 12 Art">Grade 12 Art</option>
-                  </select>
-                </div>
-                <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Gender</label>
-                  <select
+                  <DropdownWithSearch
+                    options={[
+                      { value: 'Female', label: 'Female' },
+                      { value: 'Male', label: 'Male' }
+                    ]}
                     value={newGender}
-                    onChange={(e) => setNewGender(e.target.value as any)}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                  >
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                  </select>
+                    onChange={(val) => setNewGender(val as any)}
+                    placeholder="Select gender..."
+                    searchPlaceholder="Search gender..."
+                    colorScheme="emerald"
+                    buttonLabel="Select"
+                  />
                 </div>
               </div>
 

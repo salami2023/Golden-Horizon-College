@@ -140,6 +140,109 @@ export const INITIAL_STUDENTS: Student[] = [
     feePaid: 1800,
     attendanceRate: 96.0,
     gpa: 3.60
+  },
+  {
+    id: 'std-107',
+    admissionNo: 'KS/2024/007',
+    firstName: 'Chidera',
+    lastName: 'Obi',
+    gender: 'Male',
+    dob: '2014-07-19',
+    classGroup: 'Basic 5',
+    parentName: 'Mr. & Mrs. Obi',
+    parentPhone: '+234 803 555 1212',
+    parentEmail: 'obi.family@example.com',
+    avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200',
+    isBoarder: false,
+    isBusEnrolled: true,
+    busRoute: 'Route 1 - Lekki Phase 1 & Ikoyi',
+    status: 'Active',
+    totalFeeDue: 850,
+    feePaid: 850,
+    attendanceRate: 99.0,
+    gpa: 4.0
+  },
+  {
+    id: 'std-108',
+    admissionNo: 'KS/2024/008',
+    firstName: 'Kamsi',
+    lastName: 'Adeleke',
+    gender: 'Female',
+    dob: '2016-02-14',
+    classGroup: 'Basic 3',
+    parentName: 'Mrs. Folake Adeleke',
+    parentPhone: '+234 802 777 8899',
+    parentEmail: 'folake.adeleke@example.com',
+    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+    isBoarder: false,
+    isBusEnrolled: true,
+    busRoute: 'Route 2 - Ikeja & Maryland Express',
+    status: 'Active',
+    totalFeeDue: 800,
+    feePaid: 800,
+    attendanceRate: 97.5,
+    gpa: 3.9
+  },
+  {
+    id: 'std-109',
+    admissionNo: 'KS/2024/009',
+    firstName: 'Tiwa',
+    lastName: 'Johnson',
+    gender: 'Female',
+    dob: '2018-09-03',
+    classGroup: 'Basic 1',
+    parentName: 'Barrister Tunde Johnson',
+    parentPhone: '+234 809 222 3344',
+    parentEmail: 'tunde.johnson@example.com',
+    avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=200',
+    isBoarder: false,
+    isBusEnrolled: false,
+    status: 'Active',
+    totalFeeDue: 750,
+    feePaid: 400,
+    attendanceRate: 98.0,
+    gpa: 3.85
+  },
+  {
+    id: 'std-110',
+    admissionNo: 'KS/2024/010',
+    firstName: 'Favour',
+    lastName: 'Daniel',
+    gender: 'Female',
+    dob: '2019-11-20',
+    classGroup: 'Nursery 2',
+    parentName: 'Pastor Daniel Emmanuel',
+    parentPhone: '+234 805 111 9988',
+    parentEmail: 'daniel.e@example.com',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    isBoarder: false,
+    isBusEnrolled: true,
+    busRoute: 'Route 1 - Lekki Phase 1 & Ikoyi',
+    status: 'Active',
+    totalFeeDue: 700,
+    feePaid: 700,
+    attendanceRate: 100.0,
+    gpa: 4.0
+  },
+  {
+    id: 'std-111',
+    admissionNo: 'KS/2024/011',
+    firstName: 'Joshua',
+    lastName: 'Eze',
+    gender: 'Male',
+    dob: '2020-04-10',
+    classGroup: 'Kindergarten',
+    parentName: 'Dr. Chika Eze',
+    parentPhone: '+234 803 888 7766',
+    parentEmail: 'chika.eze@example.com',
+    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
+    isBoarder: false,
+    isBusEnrolled: false,
+    status: 'Active',
+    totalFeeDue: 650,
+    feePaid: 650,
+    attendanceRate: 96.5,
+    gpa: 3.9
   }
 ];
 
@@ -151,7 +254,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     email: 'm.vance@kwikschools.com',
     phone: '+234 803 999 1001',
     qualification: 'Ph.D. Mathematics Education',
-    subjects: ['Further Mathematics', 'Mathematics Grade 10-12'],
+    subjects: ['Further Mathematics', 'Mathematics'],
     formClass: 'Grade 10 A',
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200',
     joinDate: '2021-09-01'
@@ -179,6 +282,42 @@ export const INITIAL_TEACHERS: Teacher[] = [
     formClass: 'Grade 11 Science',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
     joinDate: '2022-08-20'
+  },
+  {
+    id: 'tch-204',
+    staffId: 'KS-STF-030',
+    name: 'Mrs. Blessing Okafor',
+    email: 'b.okafor@kwikschools.com',
+    phone: '+234 806 444 5511',
+    qualification: 'B.Ed. Early Childhood Education (Montessori Certified)',
+    subjects: ['Literacy / English Studies', 'Phonics & Spelling', 'Sensory Exploration & Rhymes'],
+    formClass: 'Nursery 1',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
+    joinDate: '2019-09-10'
+  },
+  {
+    id: 'tch-205',
+    staffId: 'KS-STF-035',
+    name: 'Mr. Samuel Adeleke',
+    email: 's.adeleke@kwikschools.com',
+    phone: '+234 803 222 9944',
+    qualification: 'B.Sc. Primary Education & Quantitative Methods',
+    subjects: ['Numeracy / Mathematics', 'Basic Science & Technology', 'Quantitative Reasoning'],
+    formClass: 'Basic 5',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    joinDate: '2020-04-01'
+  },
+  {
+    id: 'tch-206',
+    staffId: 'KS-STF-042',
+    name: 'Mrs. Joy Danladi',
+    email: 'j.danladi@kwikschools.com',
+    phone: '+234 808 666 3322',
+    qualification: 'NCE & B.Ed. Elementary Curriculum',
+    subjects: ['Social Studies & Civic Habits', 'Verbal Reasoning', 'Creative & Cultural Arts (CCA)'],
+    formClass: 'Basic 3',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+    joinDate: '2021-01-12'
   }
 ];
 
@@ -379,6 +518,68 @@ export const INITIAL_REPORT_CARDS: StudentReportCard[] = [
       { category: 'Psychomotor', trait: 'Handwriting & Presentation', score: 3 },
       { category: 'Psychomotor', trait: 'Sports & Games Participation', score: 5 }
     ]
+  },
+  {
+    id: 'rep-103',
+    studentId: 'std-107',
+    studentName: 'Chidera Obi',
+    admissionNo: 'KS/2024/007',
+    classGroup: 'Basic 5',
+    academicSession: '2025/2026',
+    term: '2nd Term',
+    totalScore: 485,
+    averageScore: 97.0,
+    classPosition: 1,
+    totalStudentsInClass: 24,
+    attendanceDaysPresent: 63,
+    totalSchoolDays: 63,
+    formTeacherRemark: 'Chidera is exceptionally diligent, polite, and top in Mathematics and Science. Well prepared for National Common Entrance!',
+    principalRemark: 'A star pupil of our primary section. Bravo!',
+    isPublished: true,
+    subjectScores: [
+      { subjectName: 'Numeracy / Mathematics', ca1: 15, ca2: 15, exam: 69, total: 99, grade: 'A', remark: 'Distinction' },
+      { subjectName: 'Literacy / English Studies', ca1: 14, ca2: 15, exam: 66, total: 95, grade: 'A', remark: 'Distinction' },
+      { subjectName: 'Basic Science & Technology', ca1: 15, ca2: 14, exam: 68, total: 97, grade: 'A', remark: 'Distinction' },
+      { subjectName: 'Social Studies & Civic Habits', ca1: 15, ca2: 15, exam: 66, total: 96, grade: 'A', remark: 'Distinction' },
+      { subjectName: 'Quantitative Reasoning', ca1: 15, ca2: 15, exam: 68, total: 98, grade: 'A', remark: 'Distinction' }
+    ],
+    domainRatings: [
+      { category: 'Cognitive', trait: 'Attentiveness & Problem Solving', score: 5 },
+      { category: 'Affective', trait: 'Honesty & Neatness', score: 5 },
+      { category: 'Affective', trait: 'Politeness & Cooperation', score: 5 },
+      { category: 'Psychomotor', trait: 'Handwriting & Drawing', score: 5 },
+      { category: 'Psychomotor', trait: 'Physical Coordination', score: 5 }
+    ]
+  },
+  {
+    id: 'rep-104',
+    studentId: 'std-110',
+    studentName: 'Favour Daniel',
+    admissionNo: 'KS/2024/010',
+    classGroup: 'Nursery 2',
+    academicSession: '2025/2026',
+    term: '2nd Term',
+    totalScore: 390,
+    averageScore: 97.5,
+    classPosition: 1,
+    totalStudentsInClass: 18,
+    attendanceDaysPresent: 63,
+    totalSchoolDays: 63,
+    formTeacherRemark: 'Favour reads three-letter words effortlessly and counts up to 100 accurately. Very joyful child.',
+    principalRemark: 'Excellent progress in early years foundation.',
+    isPublished: true,
+    subjectScores: [
+      { subjectName: 'Phonics & Spelling', ca1: 20, ca2: 20, exam: 60, total: 100, grade: 'A', remark: 'Distinction' },
+      { subjectName: 'Pre-Maths & Numbers', ca1: 19, ca2: 20, exam: 58, total: 97, grade: 'A', remark: 'Distinction' },
+      { subjectName: 'Letter Work & Writing', ca1: 18, ca2: 19, exam: 58, total: 95, grade: 'A', remark: 'Distinction' },
+      { subjectName: 'Sensory Exploration & Rhymes', ca1: 20, ca2: 20, exam: 58, total: 98, grade: 'A', remark: 'Distinction' }
+    ],
+    domainRatings: [
+      { category: 'Affective', trait: 'Sharing & Empathy', score: 5 },
+      { category: 'Affective', trait: 'Class Participation', score: 5 },
+      { category: 'Psychomotor', trait: 'Pencil Grip & Colouring', score: 5 },
+      { category: 'Psychomotor', trait: 'Outdoor Play & Balance', score: 5 }
+    ]
   }
 ];
 
@@ -453,6 +654,65 @@ export const INITIAL_CBT_EXAMS: CBTExam[] = [
         options: ['340 m/s', '150 m/s', '735 m/s', '500 m/s'],
         correctIndex: 0,
         explanation: 'v = f × λ = 500 × 0.68 = 340 m/s.'
+      }
+    ]
+  },
+  {
+    id: 'cbt-103',
+    title: 'Basic 5 National Common Entrance Mathematics Mock',
+    subject: 'Numeracy / Mathematics',
+    classGroup: 'Basic 5',
+    durationMinutes: 25,
+    totalMarks: 30,
+    scheduledDate: '2025-10-29',
+    status: 'Active',
+    questions: [
+      {
+        id: 'bp1',
+        question: 'What is the place value of 7 in the number 478,219?',
+        options: ['Ten Thousands (70,000)', 'Thousands (7,000)', 'Hundreds (700)', 'Millions (7,000,000)'],
+        correctIndex: 0,
+        explanation: '7 is in the ten-thousands column: 7 × 10,000 = 70,000.'
+      },
+      {
+        id: 'bp2',
+        question: 'Find the Lowest Common Multiple (L.C.M) of 6, 8, and 12.',
+        options: ['24', '48', '12', '36'],
+        correctIndex: 0,
+        explanation: 'Multiples of 12: 12, 24, 36... 24 is divisible by 6, 8, and 12.'
+      },
+      {
+        id: 'bp3',
+        question: 'Express 3/5 as a percentage.',
+        options: ['60%', '35%', '50%', '75%'],
+        correctIndex: 0,
+        explanation: '(3 / 5) × 100% = 60%.'
+      }
+    ]
+  },
+  {
+    id: 'cbt-104',
+    title: 'Basic 3 Science Living Things & Habitats Quiz',
+    subject: 'Basic Science & Technology',
+    classGroup: 'Basic 3',
+    durationMinutes: 20,
+    totalMarks: 20,
+    scheduledDate: '2025-10-30',
+    status: 'Active',
+    questions: [
+      {
+        id: 'b3s1',
+        question: 'Which of these is a characteristic of all living things?',
+        options: ['They can grow and reproduce', 'They never need water', 'They are made of plastic', 'They do not breathe'],
+        correctIndex: 0,
+        explanation: 'Living things exhibit MRS GREN characteristics including growth and reproduction.'
+      },
+      {
+        id: 'b3s2',
+        question: 'Which habitat does a fish live in?',
+        options: ['Aquatic (Water)', 'Terrestrial (Land)', 'Desert', 'Arboreal (Trees)'],
+        correctIndex: 0,
+        explanation: 'Fish possess gills suited for breathing in aquatic environments.'
       }
     ]
   }
@@ -539,6 +799,45 @@ export const INITIAL_HOMEWORK: HomeworkAssignment[] = [
     description: 'Write a 750-word analytical essay discussing socioeconomic impacts from 1960 to 2000.',
     submissionsCount: 12,
     totalStudents: 28
+  },
+  {
+    id: 'hw-104',
+    title: 'Basic 5 Fraction Addition & Word Problems Practice',
+    subject: 'Numeracy / Mathematics',
+    classGroup: 'Basic 5',
+    teacherName: 'Mr. Samuel Adeleke',
+    dueDate: '2025-10-27',
+    assignedDate: '2025-10-21',
+    maxPoints: 20,
+    description: 'Solve questions 1-10 in Primary Math Workbook page 42. Show all workings clearly.',
+    submissionsCount: 22,
+    totalStudents: 24
+  },
+  {
+    id: 'hw-105',
+    title: 'Basic 3 Plant Life Cycle & Parts of a Flower Drawing',
+    subject: 'Basic Science & Technology',
+    classGroup: 'Basic 3',
+    teacherName: 'Mrs. Joy Danladi',
+    dueDate: '2025-10-29',
+    assignedDate: '2025-10-22',
+    maxPoints: 15,
+    description: 'Draw and neatly label the 4 main parts of a flowering plant in your science drawing book.',
+    submissionsCount: 18,
+    totalStudents: 20
+  },
+  {
+    id: 'hw-106',
+    title: 'Nursery 2 Rhymes & Phonics 3-Letter Word Formation',
+    subject: 'Phonics & Spelling',
+    classGroup: 'Nursery 2',
+    teacherName: 'Mrs. Blessing Okafor',
+    dueDate: '2025-10-26',
+    assignedDate: '2025-10-20',
+    maxPoints: 10,
+    description: 'Practice sounding out "cat", "bat", "mat", "hat", "rat" and write each word 3 times with parent guidance.',
+    submissionsCount: 16,
+    totalStudents: 18
   }
 ];
 
@@ -638,6 +937,24 @@ export const INITIAL_BROADCASTS: BroadcastLog[] = [
     sentAt: '2025-10-15 11:00',
     status: 'Delivered',
     totalRecipients: 84
+  },
+  {
+    id: 'bc-4',
+    channel: 'SMS',
+    recipientGroup: 'Primary & Nursery Parents',
+    message: 'Notice from Head Teacher Office: Early Years and Primary pupils will participate in World Book Day celebration on Thursday. Please dress up in character costumes!',
+    sentAt: '2025-10-21 08:30',
+    status: 'Delivered',
+    totalRecipients: 140
+  },
+  {
+    id: 'bc-5',
+    channel: 'SMS',
+    recipientGroup: 'Basic 5 Common Entrance Parents',
+    message: 'Dear Basic 5 Parents, National Common Entrance Examination intensive coaching starts next Monday at 3:00 PM.',
+    sentAt: '2025-10-22 10:00',
+    status: 'Delivered',
+    totalRecipients: 24
   }
 ];
 
