@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with roles and metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["pioneer", "administrator", "principal", "head_teacher", "teacher", "bursar", "parent", "student"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record in the school management system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "fullName": { "type": "string", "maxLength": 128 },
+        "admissionNo": { "type": "string", "maxLength": 64 },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "dateOfBirth": { "type": "string", "maxLength": 32 },
+        "classGroup": { "type": "string", "maxLength": 64 },
+        "section": { "type": "string", "maxLength": 64 },
+        "parentName": { "type": "string", "maxLength": 128 },
+        "parentPhone": { "type": "string", "maxLength": 32 },
+        "parentEmail": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["Active", "Graduated", "Suspended", "Transferred"] },
+        "feeBalance": { "type": "number" },
+        "attendanceRate": { "type": "number" }
+      },
+      "required": ["id", "fullName", "admissionNo", "classGroup", "parentName", "parentPhone", "parentEmail"]
+    },
+    "SchoolConfig": {
+      "title": "SchoolConfig",
+      "description": "General school identity, sessions, and terms",
+      "type": "object",
+      "properties": {
+        "schoolName": { "type": "string", "maxLength": 128 },
+        "motto": { "type": "string", "maxLength": 256 },
+        "academicSession": { "type": "string", "maxLength": 64 },
+        "currentTerm": { "type": "string", "maxLength": 32 },
+        "principalName": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["schoolName", "academicSession", "currentTerm"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Registered user accounts"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student roster documents"
+    },
+    "/school_config/{configId}": {
+      "schema": "SchoolConfig",
+      "description": "School global settings"
+    }
+  }
+}
