@@ -131,19 +131,48 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [auditLogs, setAuditLogs] = useState<RealTimeAuditEvent[]>([]);
   const [notifications, setNotifications] = useState<RealTimeNotification[]>([]);
 
-  // State
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
-  const [teachers, setTeachers] = useState<Teacher[]>(INITIAL_TEACHERS);
-  const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
-  const [transactions, setTransactions] = useState<PaymentTransaction[]>(INITIAL_TRANSACTIONS);
-  const [reportCards, setReportCards] = useState<StudentReportCard[]>(INITIAL_REPORT_CARDS);
-  const [cbtExams, setCbtExams] = useState<CBTExam[]>(INITIAL_CBT_EXAMS);
-  const [timetable, setTimetable] = useState<TimetableSlot[]>(INITIAL_TIMETABLE);
-  const [homeworkList, setHomeworkList] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORK);
-  const [busRoutes, setBusRoutes] = useState<BusRoute[]>(INITIAL_BUS_ROUTES);
-  const [hostels, setHostels] = useState<HostelRoom[]>(INITIAL_HOSTELS);
-  const [broadcasts, setBroadcasts] = useState<BroadcastLog[]>(INITIAL_BROADCASTS);
-  const [attendance, setAttendance] = useState<Record<string, Record<string, 'Present' | 'Absent' | 'Late' | 'Excused'>>>({
+  const dedupeAuditLogs = useCallback((logs: RealTimeAuditEvent[]): RealTimeAuditEvent[] => {
+    const seen = new Set<string>();
+    return logs.filter((log) => {
+      if (!log || !log.id || seen.has(log.id)) return false;
+      seen.add(log.id);
+      return true;
+    });
+  }, []);
+
+  // Persistent Client Database Snapshot Key
+  const CLIENT_DB_STORAGE_KEY = 'golden_horizon_school_db_master_v2';
+
+  const readLocalDatabaseSnapshot = useCallback((): any | null => {
+    try {
+      const raw = localStorage.getItem(CLIENT_DB_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed reading localStorage database snapshot:', err);
+    }
+    return null;
+  }, []);
+
+  const cachedSnapshot = useRef<any>(readLocalDatabaseSnapshot()).current;
+
+  // State initialized from local database snapshot first to prevent wiping across hot-reloads and feature updates
+  const [students, setStudents] = useState<Student[]>(() => cachedSnapshot?.students || INITIAL_STUDENTS);
+  const [teachers, setTeachers] = useState<Teacher[]>(() => cachedSnapshot?.teachers || INITIAL_TEACHERS);
+  const [invoices, setInvoices] = useState<Invoice[]>(() => cachedSnapshot?.invoices || INITIAL_INVOICES);
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>(() => cachedSnapshot?.transactions || INITIAL_TRANSACTIONS);
+  const [reportCards, setReportCards] = useState<StudentReportCard[]>(() => cachedSnapshot?.reportCards || INITIAL_REPORT_CARDS);
+  const [cbtExams, setCbtExams] = useState<CBTExam[]>(() => cachedSnapshot?.cbtExams || INITIAL_CBT_EXAMS);
+  const [timetable, setTimetable] = useState<TimetableSlot[]>(() => cachedSnapshot?.timetable || INITIAL_TIMETABLE);
+  const [homeworkList, setHomeworkList] = useState<HomeworkAssignment[]>(() => cachedSnapshot?.homeworkList || INITIAL_HOMEWORK);
+  const [busRoutes, setBusRoutes] = useState<BusRoute[]>(() => cachedSnapshot?.busRoutes || INITIAL_BUS_ROUTES);
+  const [hostels, setHostels] = useState<HostelRoom[]>(() => cachedSnapshot?.hostels || INITIAL_HOSTELS);
+  const [broadcasts, setBroadcasts] = useState<BroadcastLog[]>(() => cachedSnapshot?.broadcasts || INITIAL_BROADCASTS);
+  const [attendance, setAttendance] = useState<Record<string, Record<string, 'Present' | 'Absent' | 'Late' | 'Excused'>>>(() => cachedSnapshot?.attendance || {
     '2026-09-02': {
       'std-101': 'Present',
       'std-102': 'Present',
@@ -153,17 +182,20 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   });
   const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>(() => {
+    if (cachedSnapshot?.schoolSettings) {
+      return { ...INITIAL_SCHOOL_SETTINGS, ...cachedSnapshot.schoolSettings };
+    }
     try {
-      const cached = localStorage.getItem('golden_horizon_school_settings');
-      if (cached) {
-        return { ...INITIAL_SCHOOL_SETTINGS, ...JSON.parse(cached) };
+      const legacyCached = localStorage.getItem('golden_horizon_school_settings');
+      if (legacyCached) {
+        return { ...INITIAL_SCHOOL_SETTINGS, ...JSON.parse(legacyCached) };
       }
     } catch (e) {
       console.warn('Could not read schoolSettings cache', e);
     }
     return INITIAL_SCHOOL_SETTINGS;
   });
-  const [themeConfig, setThemeConfig] = useState<SchoolThemeConfig>({
+  const [themeConfig, setThemeConfig] = useState<SchoolThemeConfig>(() => cachedSnapshot?.themeConfig || {
     mode: 'light',
     primaryColor: '#2563eb',
     headerColor: 'white',
@@ -173,6 +205,69 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fontFamily: 'Inter',
     containerWidth: 'wide'
   });
+
+  // Keep localStorage database snapshot updated on every state change
+  useEffect(() => {
+    try {
+      localStorage.setItem(CLIENT_DB_STORAGE_KEY, JSON.stringify({
+        students,
+        teachers,
+        invoices,
+        transactions,
+        reportCards,
+        cbtExams,
+        timetable,
+        homeworkList,
+        busRoutes,
+        hostels,
+        broadcasts,
+        attendance,
+        schoolSettings,
+        themeConfig
+      }));
+    } catch (err) {
+      console.warn('Failed writing localStorage database snapshot:', err);
+    }
+  }, [
+    students,
+    teachers,
+    invoices,
+    transactions,
+    reportCards,
+    cbtExams,
+    timetable,
+    homeworkList,
+    busRoutes,
+    hostels,
+    broadcasts,
+    attendance,
+    schoolSettings,
+    themeConfig
+  ]);
+
+  // Synchronize any locally saved user data to the server if the server has fewer records
+  const checkAndHydrateServer = useCallback(async (serverState: any) => {
+    if (!serverState) return;
+    const local = readLocalDatabaseSnapshot();
+    if (!local) return;
+
+    const hasNewStudents = Array.isArray(local.students) && local.students.length > (serverState.students?.length || 0);
+    const hasNewTeachers = Array.isArray(local.teachers) && local.teachers.length > (serverState.teachers?.length || 0);
+    const hasNewInvoices = Array.isArray(local.invoices) && local.invoices.length > (serverState.invoices?.length || 0);
+    const hasNewTransactions = Array.isArray(local.transactions) && local.transactions.length > (serverState.transactions?.length || 0);
+
+    if (hasNewStudents || hasNewTeachers || hasNewInvoices || hasNewTransactions) {
+      try {
+        await fetch('/api/sync/hydrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: local })
+        });
+      } catch (err) {
+        console.warn('Background state hydration error:', err);
+      }
+    }
+  }, [readLocalDatabaseSnapshot]);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<any>(null);
@@ -217,17 +312,18 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (data.state.attendance) setAttendance(data.state.attendance);
           if (data.state.schoolSettings) setSchoolSettings(data.state.schoolSettings);
           if (data.state.themeConfig) setThemeConfig(data.state.themeConfig);
-          if (data.state.auditLogs) setAuditLogs(data.state.auditLogs);
+          if (data.state.auditLogs) setAuditLogs(dedupeAuditLogs(data.state.auditLogs));
         }
         if (data.peers) setConnectedPeers(data.peers);
         setLastSyncedAt(new Date());
+        checkAndHydrateServer(data.state);
       }
     } catch (err) {
       console.error('Failed to fetch synchronized school state:', err);
     } finally {
       setIsSyncing(false);
     }
-  }, []);
+  }, [dedupeAuditLogs, checkAndHydrateServer]);
 
   // WebSocket Connection
   useEffect(() => {
@@ -279,10 +375,11 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 if (s.attendance) setAttendance(s.attendance);
                 if (s.schoolSettings) setSchoolSettings(s.schoolSettings);
                 if (s.themeConfig) setThemeConfig(s.themeConfig);
-                if (s.auditLogs) setAuditLogs(s.auditLogs);
+                if (s.auditLogs) setAuditLogs(dedupeAuditLogs(s.auditLogs));
               }
               if (msg.peers) setConnectedPeers(msg.peers);
               setLastSyncedAt(new Date());
+              if (s) checkAndHydrateServer(s);
             } else if (msg.type === 'SYNC_DELTA') {
               const { entity, action, data, auditLog, fullState, actor } = msg;
 
@@ -301,11 +398,13 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 if (fullState.attendance) setAttendance(fullState.attendance);
                 if (fullState.schoolSettings) setSchoolSettings(fullState.schoolSettings);
                 if (fullState.themeConfig) setThemeConfig(fullState.themeConfig);
-                if (fullState.auditLogs) setAuditLogs(fullState.auditLogs);
+                if (fullState.auditLogs) setAuditLogs(dedupeAuditLogs(fullState.auditLogs));
               }
 
               if (auditLog) {
-                setAuditLogs((prev) => [auditLog, ...prev.slice(0, 99)]);
+                if (!fullState || !fullState.auditLogs) {
+                  setAuditLogs((prev) => dedupeAuditLogs([auditLog, ...prev.slice(0, 99)]));
+                }
                 addNotification(
                   `Real-Time Sync: ${auditLog.action.replace('_', ' ')}`,
                   auditLog.details,
@@ -348,7 +447,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (wsRef.current) wsRef.current.close();
     };
-  }, [refreshState, addNotification]);
+  }, [refreshState, addNotification, checkAndHydrateServer]);
 
   // Keep presence updated when currentRole changes
   useEffect(() => {
@@ -404,14 +503,14 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (resData.state.attendance) setAttendance(resData.state.attendance);
             if (resData.state.schoolSettings) setSchoolSettings(resData.state.schoolSettings);
             if (resData.state.themeConfig) setThemeConfig(resData.state.themeConfig);
-            if (resData.state.auditLogs) setAuditLogs(resData.state.auditLogs);
+            if (resData.state.auditLogs) setAuditLogs(dedupeAuditLogs(resData.state.auditLogs));
           }
         }
       } catch (err) {
         console.error('REST mutation fallback error:', err);
       }
     }
-  }, [currentRole]);
+  }, [currentRole, dedupeAuditLogs]);
 
   // Concrete mutators
   const addStudent = useCallback(async (std: Student, actor?: SyncActor) => {

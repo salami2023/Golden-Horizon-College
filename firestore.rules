@@ -54,5 +54,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isSignedIn();
     }
+
+    // School State Snapshot Collection
+    match /school_state/{snapshotId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
   }
 }

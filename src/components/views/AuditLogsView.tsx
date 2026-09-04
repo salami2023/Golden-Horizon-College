@@ -250,14 +250,14 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredLogs.length > 0 ? (
-              filteredLogs.map((log) => {
+              filteredLogs.map((log, index) => {
                 const isDenied =
                   log.action.toLowerCase().includes('denied') ||
                   log.action.toLowerCase().includes('unauthorized');
 
                 return (
                   <tr
-                    key={log.id}
+                    key={`${log.id}-${index}`}
                     className={`hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition ${
                       isDenied ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
                     }`}

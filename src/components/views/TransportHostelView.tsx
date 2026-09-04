@@ -466,7 +466,7 @@ export const TransportHostelView: React.FC<TransportHostelViewProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <CreditCard className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono">Fee: ${room.feePerTerm} / term</span>
+                      <span className="font-mono">Fee: ₦{room.feePerTerm?.toLocaleString()} / term</span>
                     </div>
                   </div>
                 </div>
@@ -826,7 +826,7 @@ export const TransportHostelView: React.FC<TransportHostelViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Fee Per Term ($)</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Fee Per Term (₦)</label>
                   <input
                     type="number"
                     value={editingHostel.feePerTerm || 350}

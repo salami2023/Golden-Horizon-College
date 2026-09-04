@@ -472,7 +472,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                           <CheckCircle className="h-3 w-3" /> Fully Cleared
                         </>
                       ) : (
-                        <>Due: ${(std.totalFeeDue - std.feePaid).toLocaleString()}</>
+                        <>Due: ₦{(std.totalFeeDue - std.feePaid).toLocaleString()}</>
                       )}
                     </span>
                   </td>
@@ -596,7 +596,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   {selectedStudent.isBusEnrolled ? (selectedStudent.busRoute || 'Route 1 - Campus Central') : 'Not Enrolled'}
                 </p>
                 <p className="text-slate-700 dark:text-slate-300">
-                  <span className="font-semibold">Fee Ledger:</span> ${selectedStudent.feePaid.toLocaleString()} paid of ${selectedStudent.totalFeeDue.toLocaleString()}
+                  <span className="font-semibold">Fee Ledger:</span> ₦{selectedStudent.feePaid.toLocaleString()} paid of ₦{selectedStudent.totalFeeDue.toLocaleString()}
                 </p>
               </div>
 

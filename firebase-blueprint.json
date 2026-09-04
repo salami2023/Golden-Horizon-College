@@ -47,6 +47,16 @@
         "principalName": { "type": "string", "maxLength": 128 }
       },
       "required": ["schoolName", "academicSession", "currentTerm"]
+    },
+    "SchoolStateSnapshot": {
+      "title": "SchoolStateSnapshot",
+      "description": "Full durable backup and cloud sync snapshot for the school database",
+      "type": "object",
+      "properties": {
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "version": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["updatedAt"]
     }
   },
   "firestore": {
@@ -61,6 +71,10 @@
     "/school_config/{configId}": {
       "schema": "SchoolConfig",
       "description": "School global settings"
+    },
+    "/school_state/{snapshotId}": {
+      "schema": "SchoolStateSnapshot",
+      "description": "Cloud backup of school database state"
     }
   }
 }

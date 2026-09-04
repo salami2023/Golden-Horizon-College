@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { WebSocketServer, WebSocket } from "ws";
@@ -62,7 +63,12 @@ interface ServerState {
   auditLogs: RealTimeAuditEvent[];
 }
 
-const schoolState: ServerState = {
+// Durable Database Persistence Paths
+const DATA_DIR = path.join(__dirname, "data");
+const DB_FILE = path.join(DATA_DIR, "school_database.json");
+const BACKUP_FILE = path.join(DATA_DIR, "school_database.backup.json");
+
+const defaultInitialState: ServerState = {
   students: [...INITIAL_STUDENTS],
   teachers: [...INITIAL_TEACHERS],
   invoices: [...INITIAL_INVOICES],
@@ -98,7 +104,7 @@ const schoolState: ServerState = {
   },
   auditLogs: [
     {
-      id: `audit-${Date.now()}`,
+      id: `audit-${Date.now()}-init`,
       timestamp: new Date().toISOString(),
       actorRole: 'pioneer',
       actorName: 'Pioneer Master',
@@ -108,6 +114,90 @@ const schoolState: ServerState = {
     }
   ]
 };
+
+// Atomically save state to disk to survive server restarts, hot reloads, and feature updates
+function savePersistedState(state: ServerState) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    const json = JSON.stringify(state, null, 2);
+    const tmpFile = `${DB_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tmpFile, json, "utf-8");
+    fs.renameSync(tmpFile, DB_FILE);
+    fs.writeFileSync(BACKUP_FILE, json, "utf-8");
+  } catch (err) {
+    console.error("[Database] Failed to persist database state to disk:", err);
+  }
+}
+
+// Load persisted state from disk if it exists; otherwise initialize from defaults
+function loadPersistedState(): ServerState {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    if (fs.existsSync(DB_FILE)) {
+      const raw = fs.readFileSync(DB_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        console.log(`[Database] Preserving existing database from ${DB_FILE}. All records retained across feature updates!`);
+        return {
+          students: Array.isArray(parsed.students) ? parsed.students : [...defaultInitialState.students],
+          teachers: Array.isArray(parsed.teachers) ? parsed.teachers : [...defaultInitialState.teachers],
+          invoices: Array.isArray(parsed.invoices) ? parsed.invoices : [...defaultInitialState.invoices],
+          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [...defaultInitialState.transactions],
+          reportCards: Array.isArray(parsed.reportCards) ? parsed.reportCards : [...defaultInitialState.reportCards],
+          cbtExams: Array.isArray(parsed.cbtExams) ? parsed.cbtExams : [...defaultInitialState.cbtExams],
+          timetable: Array.isArray(parsed.timetable) ? parsed.timetable : [...defaultInitialState.timetable],
+          homeworkList: Array.isArray(parsed.homeworkList) ? parsed.homeworkList : [...defaultInitialState.homeworkList],
+          busRoutes: Array.isArray(parsed.busRoutes) ? parsed.busRoutes : [...defaultInitialState.busRoutes],
+          hostels: Array.isArray(parsed.hostels) ? parsed.hostels : [...defaultInitialState.hostels],
+          broadcasts: Array.isArray(parsed.broadcasts) ? parsed.broadcasts : [...defaultInitialState.broadcasts],
+          attendance: parsed.attendance && typeof parsed.attendance === "object" ? parsed.attendance : { ...defaultInitialState.attendance },
+          schoolSettings: parsed.schoolSettings && typeof parsed.schoolSettings === "object" ? { ...defaultInitialState.schoolSettings, ...parsed.schoolSettings } : { ...defaultInitialState.schoolSettings },
+          themeConfig: parsed.themeConfig && typeof parsed.themeConfig === "object" ? { ...defaultInitialState.themeConfig, ...parsed.themeConfig } : defaultInitialState.themeConfig,
+          auditLogs: Array.isArray(parsed.auditLogs) && parsed.auditLogs.length > 0 ? parsed.auditLogs : [...defaultInitialState.auditLogs]
+        };
+      }
+    }
+  } catch (err) {
+    console.error("[Database] Error reading primary database file, checking backup:", err);
+    try {
+      if (fs.existsSync(BACKUP_FILE)) {
+        const raw = fs.readFileSync(BACKUP_FILE, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          console.log(`[Database] Recovered state from backup ${BACKUP_FILE}`);
+          return {
+            ...defaultInitialState,
+            ...parsed
+          };
+        }
+      }
+    } catch (bErr) {
+      console.error("[Database] Backup load also failed:", bErr);
+    }
+  }
+
+  // First time initialization: write default initial state to database file
+  console.log("[Database] Initializing new persistent database file...");
+  savePersistedState(defaultInitialState);
+  return { ...defaultInitialState };
+}
+
+const schoolState: ServerState = loadPersistedState();
+
+// Ensure state is flushed on process exit
+process.on("SIGINT", () => {
+  savePersistedState(schoolState);
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  savePersistedState(schoolState);
+  process.exit(0);
+});
 
 // Connected client tracking
 interface ClientInfo {
@@ -157,7 +247,7 @@ function broadcastPresence() {
 
 function logAudit(actorRole: UserRole, actorName: string, action: string, entity: string, details: string) {
   const log: RealTimeAuditEvent = {
-    id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     timestamp: new Date().toISOString(),
     actorRole,
     actorName: actorName || actorRole.toUpperCase(),
@@ -165,10 +255,7 @@ function logAudit(actorRole: UserRole, actorName: string, action: string, entity
     entity,
     details
   };
-  schoolState.auditLogs.unshift(log);
-  if (schoolState.auditLogs.length > 100) {
-    schoolState.auditLogs.pop();
-  }
+  schoolState.auditLogs = [log, ...schoolState.auditLogs.filter((l) => l.id !== log.id)].slice(0, 100);
   return log;
 }
 
@@ -425,6 +512,9 @@ async function startServer() {
 
           const auditLog = logAudit(actorRole, actorName, `${entity.toUpperCase()}_${action.toUpperCase()}`, entity, auditMsg);
 
+          // Persist all updates to durable database disk store immediately
+          savePersistedState(schoolState);
+
           // Broadcast DELTA to all connected clients including sender confirmation
           const deltaPayload = {
             type: "SYNC_DELTA",
@@ -661,6 +751,9 @@ async function startServer() {
 
       const auditLog = logAudit(actorRole, actorName, `${entity.toUpperCase()}_${action.toUpperCase()}`, entity, auditMsg);
 
+      // Persist all updates to durable database disk store immediately
+      savePersistedState(schoolState);
+
       // Broadcast delta to all WebSockets
       broadcastMessage({
         type: "SYNC_DELTA",
@@ -682,6 +775,75 @@ async function startServer() {
   // Get live audit logs
   app.get("/api/sync/audit-logs", (req, res) => {
     res.json({ auditLogs: schoolState.auditLogs });
+  });
+
+  // Export full persistent database snapshot
+  app.get("/api/sync/backup", (req, res) => {
+    res.setHeader("Content-Disposition", `attachment; filename="golden_horizon_school_db_${Date.now()}.json"`);
+    res.json(schoolState);
+  });
+
+  // Client hydration to ensure no user records are ever lost during applet feature updates
+  app.post("/api/sync/hydrate", (req, res) => {
+    try {
+      const clientState = req.body?.state;
+      if (clientState && typeof clientState === "object") {
+        let modified = false;
+
+        const mergeCollection = (key: keyof ServerState) => {
+          const clientArr = clientState[key];
+          const serverArr = schoolState[key];
+          if (Array.isArray(clientArr) && Array.isArray(serverArr)) {
+            const existingIds = new Set((serverArr as any[]).map((item) => item.id));
+            const newItems = (clientArr as any[]).filter((item) => item && item.id && !existingIds.has(item.id));
+            if (newItems.length > 0) {
+              (schoolState as any)[key] = [...newItems, ...serverArr];
+              modified = true;
+            }
+          }
+        };
+
+        mergeCollection("students");
+        mergeCollection("teachers");
+        mergeCollection("invoices");
+        mergeCollection("transactions");
+        mergeCollection("reportCards");
+        mergeCollection("cbtExams");
+        mergeCollection("timetable");
+        mergeCollection("homeworkList");
+        mergeCollection("busRoutes");
+        mergeCollection("hostels");
+        mergeCollection("broadcasts");
+
+        if (clientState.attendance && typeof clientState.attendance === "object") {
+          schoolState.attendance = { ...schoolState.attendance, ...clientState.attendance };
+          modified = true;
+        }
+
+        if (clientState.schoolSettings && typeof clientState.schoolSettings === "object") {
+          schoolState.schoolSettings = { ...schoolState.schoolSettings, ...clientState.schoolSettings };
+          modified = true;
+        }
+
+        if (modified) {
+          savePersistedState(schoolState);
+          logAudit("pioneer", "Data Protection Engine", "STATE_HYDRATED", "system", "Restored and merged persistent client state.");
+          broadcastMessage({
+            type: "SYNC_DELTA",
+            entity: "system",
+            action: "hydrate",
+            data: {},
+            auditLog: schoolState.auditLogs[0],
+            fullState: schoolState,
+            actor: { role: "pioneer", name: "Data Guard" }
+          });
+        }
+      }
+      return res.json({ success: true, state: schoolState });
+    } catch (err: any) {
+      console.error("Hydration error:", err);
+      return res.status(500).json({ error: "Failed to hydrate state", details: err.message });
+    }
   });
 
   // User Profile Sync & Cloud SQL authentication

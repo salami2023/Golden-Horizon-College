@@ -218,7 +218,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
         <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Invoiced</span>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
-            ${totalRevenueInvoiced.toLocaleString()}
+            ₦{totalRevenueInvoiced.toLocaleString()}
           </div>
           <span className="text-[10px] text-slate-500 font-semibold mt-1 block">
             {invoices.length} Registered Invoices
@@ -228,7 +228,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
         <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Total Collected</span>
           <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-            ${totalPaid.toLocaleString()}
+            ₦{totalPaid.toLocaleString()}
           </div>
           <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">
             {totalRevenueInvoiced ? Math.round((totalPaid / totalRevenueInvoiced) * 100) : 0}% Collection Rate
@@ -238,7 +238,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
         <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
           <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">Total Outstanding</span>
           <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 mt-1">
-            ${totalOutstanding.toLocaleString()}
+            ₦{totalOutstanding.toLocaleString()}
           </div>
           <span className="text-[10px] text-rose-500 font-semibold mt-1 block">
             {debtorsList.length} Unsettled Accounts
@@ -334,9 +334,9 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                     <td className="py-3 px-4 font-mono font-bold text-amber-600">{inv.invoiceNo}</td>
                     <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{inv.studentName}</td>
                     <td className="py-3 px-4 text-slate-500">{inv.classGroup}</td>
-                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">${inv.totalAmount.toLocaleString()}</td>
-                    <td className="py-3 px-4 text-emerald-600 font-semibold">${inv.amountPaid.toLocaleString()}</td>
-                    <td className="py-3 px-4 text-rose-600 font-bold">${inv.balanceDue.toLocaleString()}</td>
+                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">₦{inv.totalAmount.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-emerald-600 font-semibold">₦{inv.amountPaid.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-rose-600 font-bold">₦{inv.balanceDue.toLocaleString()}</td>
                     <td className="py-3 px-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                         inv.status === 'Paid'
@@ -409,7 +409,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                       {tx.paymentMethod}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-black text-emerald-600">${tx.amount.toLocaleString()}</td>
+                  <td className="py-3 px-4 font-black text-emerald-600">₦{tx.amount.toLocaleString()}</td>
                   <td className="py-3 px-4">
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] font-bold">
                       {tx.status}
@@ -452,11 +452,11 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                 <p className="font-extrabold text-slate-900 dark:text-white text-sm mt-0.5">
                   {selectedInvoice.studentName} ({selectedInvoice.invoiceNo})
                 </p>
-                <p className="text-rose-600 font-bold mt-1">Outstanding Balance: ${selectedInvoice.balanceDue.toLocaleString()}</p>
+                <p className="text-rose-600 font-bold mt-1">Outstanding Balance: ₦{selectedInvoice.balanceDue.toLocaleString()}</p>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Payment Amount ($)</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Payment Amount (₦)</label>
                 <input
                   type="number"
                   required
@@ -548,7 +548,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Total Fee Amount ($)</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Total Fee Amount (₦)</label>
                 <input
                   type="number"
                   required

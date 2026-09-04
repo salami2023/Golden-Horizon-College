@@ -237,7 +237,7 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Outstanding Fee Balance</span>
                 <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-                  ${activeInvoice?.balanceDue || 0}
+                  ₦{(activeInvoice?.balanceDue || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
                   Invoice: {activeInvoice?.invoiceNo || 'INV-2025-CURRENT'}
@@ -247,7 +247,7 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                 {(activeInvoice?.balanceDue || 0) > 0 ? (
                   <button
-                    onClick={() => alert(`Redirecting to secure online payment gateway for $${activeInvoice?.balanceDue}...`)}
+                    onClick={() => alert(`Redirecting to secure online payment gateway for ₦${activeInvoice?.balanceDue?.toLocaleString()}...`)}
                     className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2"
                   >
                     <CreditCard className="h-4 w-4" /> Settle Fees Online
