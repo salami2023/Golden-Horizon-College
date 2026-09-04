@@ -27,6 +27,7 @@ import {
   PRIMARY_SCHOOL_NAME,
   SCHOOL_CONTACT_DETAILS
 } from '../../utils/sectionHelpers';
+import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../../assets/schoolAssets';
 
 interface ParentPortalViewProps {
   students: Student[];
@@ -118,35 +119,44 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-        <div>
-          <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <HeartHandshake className="h-5 w-5 text-indigo-600" />
-            {activeStudent
-              ? isPrimaryClass(activeStudent.classGroup)
-                ? `${schoolSettings?.primarySchoolName || PRIMARY_SCHOOL_NAME} Parent Portal`
-                : `${schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME} Parent Portal`
-              : `${schoolSettings?.schoolName || 'Golden Horizon'} Parent & Guardian Portal`}
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Official terminal report cards, continuous assessments, fee balances, and institutional contact helpline.
-          </p>
-          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            <a
-              href={`https://${schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              <Globe className="h-3 w-3" /> {schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website}
-            </a>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Mail className="h-3 w-3 text-emerald-600" /> {schoolSettings?.email || SCHOOL_CONTACT_DETAILS.emails[0]}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1 font-mono">
-              <Phone className="h-3 w-3 text-amber-600" /> {schoolSettings?.phone || SCHOOL_CONTACT_DETAILS.phoneNumbers[0]}
-            </span>
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="h-12 w-12 shrink-0 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 shadow-sm flex items-center justify-center">
+            <img
+              src={schoolSettings?.logoUrl || DEFAULT_SCHOOL_LOGO_DATA_URI}
+              alt="School Logo"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <HeartHandshake className="h-5 w-5 text-indigo-600" />
+              {activeStudent
+                ? isPrimaryClass(activeStudent.classGroup)
+                  ? `${schoolSettings?.primarySchoolName || PRIMARY_SCHOOL_NAME} Parent Portal`
+                  : `${schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME} Parent Portal`
+                : `${schoolSettings?.schoolName || 'Golden Horizon'} Parent & Guardian Portal`}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Official terminal report cards, continuous assessments, fee balances, and institutional contact helpline.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+              <a
+                href={`https://${schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <Globe className="h-3 w-3" /> {schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website}
+              </a>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Mail className="h-3 w-3 text-emerald-600" /> {schoolSettings?.email || SCHOOL_CONTACT_DETAILS.emails[0]}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1 font-mono">
+                <Phone className="h-3 w-3 text-amber-600" /> {schoolSettings?.phone || SCHOOL_CONTACT_DETAILS.phoneNumbers[0]}
+              </span>
+            </div>
           </div>
         </div>
 

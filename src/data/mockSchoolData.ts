@@ -15,6 +15,7 @@ import {
   BroadcastLog,
   SchoolSettings
 } from '../types';
+import { DEFAULT_SCHOOL_LOGO_DATA_URI, DEFAULT_SCHOOL_STAMP_DATA_URI } from '../assets/schoolAssets';
 
 export const INITIAL_STUDENTS: Student[] = [
   {
@@ -977,7 +978,9 @@ export const INITIAL_SCHOOL_SETTINGS: SchoolSettings = {
   currentTerm: '2nd Term',
   principalName: 'Dr. Elizabeth Sterling',
   headTeacherName: 'Mrs. Folashade Adeleke',
-  gradingSystem: 'Grade A: 70-100%, Grade B: 60-69%, Grade C: 50-59%, Grade D: 40-49%, Grade F: <40%'
+  gradingSystem: 'Grade A: 70-100%, Grade B: 60-69%, Grade C: 50-59%, Grade D: 40-49%, Grade F: <40%',
+  logoUrl: DEFAULT_SCHOOL_LOGO_DATA_URI,
+  stampUrl: DEFAULT_SCHOOL_STAMP_DATA_URI
 };
 
 

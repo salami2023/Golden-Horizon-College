@@ -1,4 +1,5 @@
 import { UserRole, SchoolSettings } from '../types';
+import { DEFAULT_SCHOOL_LOGO_DATA_URI, DEFAULT_SCHOOL_STAMP_DATA_URI } from '../assets/schoolAssets';
 
 export const SECONDARY_CLASSES = [
   'JSS 1 A',
@@ -230,4 +231,12 @@ export function getAcademicSessionAndTerm(settings?: Partial<SchoolSettings>) {
     termSessionDisplay: `${academicSession} • ${currentTerm}`,
     overviewLabel: `${academicSession} • ${currentTerm} Overview`
   };
+}
+
+export function getSchoolLogo(settings?: Partial<SchoolSettings>): string {
+  return settings?.logoUrl || DEFAULT_SCHOOL_LOGO_DATA_URI;
+}
+
+export function getSchoolStamp(settings?: Partial<SchoolSettings>): string {
+  return settings?.stampUrl || DEFAULT_SCHOOL_STAMP_DATA_URI;
 }

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { UserRole, SchoolThemeConfig } from '../types';
 import { useRealTime } from '../context/RealTimeContext';
+import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../assets/schoolAssets';
 import {
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
@@ -185,8 +186,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Brand Header */}
       <div className={`flex items-center gap-3 pb-5 pt-6 border-b border-slate-800/80 ${isCollapsed ? 'px-4 justify-center' : 'px-5'}`}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 text-white font-bold shadow-md shadow-blue-500/20">
-          <ShieldCheck className="h-5 w-5" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/95 p-1 text-white font-bold shadow-md shadow-blue-500/20 border border-slate-700">
+          <img
+            src={schoolSettings?.logoUrl || DEFAULT_SCHOOL_LOGO_DATA_URI}
+            alt="Golden Horizon Logo"
+            className="h-full w-full object-contain rounded-lg"
+          />
         </div>
         {!isCollapsed && (
           <div className="flex flex-col min-w-0">

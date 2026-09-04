@@ -310,7 +310,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (data.state.hostels) setHostels(data.state.hostels);
           if (data.state.broadcasts) setBroadcasts(data.state.broadcasts);
           if (data.state.attendance) setAttendance(data.state.attendance);
-          if (data.state.schoolSettings) setSchoolSettings(data.state.schoolSettings);
+          if (data.state.schoolSettings) setSchoolSettings({ ...INITIAL_SCHOOL_SETTINGS, ...data.state.schoolSettings });
           if (data.state.themeConfig) setThemeConfig(data.state.themeConfig);
           if (data.state.auditLogs) setAuditLogs(dedupeAuditLogs(data.state.auditLogs));
         }
@@ -373,7 +373,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 if (s.hostels) setHostels(s.hostels);
                 if (s.broadcasts) setBroadcasts(s.broadcasts);
                 if (s.attendance) setAttendance(s.attendance);
-                if (s.schoolSettings) setSchoolSettings(s.schoolSettings);
+                if (s.schoolSettings) setSchoolSettings({ ...INITIAL_SCHOOL_SETTINGS, ...s.schoolSettings });
                 if (s.themeConfig) setThemeConfig(s.themeConfig);
                 if (s.auditLogs) setAuditLogs(dedupeAuditLogs(s.auditLogs));
               }
@@ -396,7 +396,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 if (fullState.hostels) setHostels(fullState.hostels);
                 if (fullState.broadcasts) setBroadcasts(fullState.broadcasts);
                 if (fullState.attendance) setAttendance(fullState.attendance);
-                if (fullState.schoolSettings) setSchoolSettings(fullState.schoolSettings);
+                if (fullState.schoolSettings) setSchoolSettings({ ...INITIAL_SCHOOL_SETTINGS, ...fullState.schoolSettings });
                 if (fullState.themeConfig) setThemeConfig(fullState.themeConfig);
                 if (fullState.auditLogs) setAuditLogs(dedupeAuditLogs(fullState.auditLogs));
               }
@@ -501,7 +501,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (resData.state.hostels) setHostels(resData.state.hostels);
             if (resData.state.broadcasts) setBroadcasts(resData.state.broadcasts);
             if (resData.state.attendance) setAttendance(resData.state.attendance);
-            if (resData.state.schoolSettings) setSchoolSettings(resData.state.schoolSettings);
+            if (resData.state.schoolSettings) setSchoolSettings({ ...INITIAL_SCHOOL_SETTINGS, ...resData.state.schoolSettings });
             if (resData.state.themeConfig) setThemeConfig(resData.state.themeConfig);
             if (resData.state.auditLogs) setAuditLogs(dedupeAuditLogs(resData.state.auditLogs));
           }

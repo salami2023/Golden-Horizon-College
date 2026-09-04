@@ -31,6 +31,10 @@ import {
   PRIMARY_SCHOOL_NAME,
   SCHOOL_CONTACT_DETAILS
 } from '../../utils/sectionHelpers';
+import {
+  DEFAULT_SCHOOL_LOGO_DATA_URI,
+  DEFAULT_SCHOOL_STAMP_DATA_URI
+} from '../../assets/schoolAssets';
 
 interface AcademicsReportCardsProps {
   reportCards: StudentReportCard[];
@@ -390,24 +394,28 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
         <div className="printable-report border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
           
           {/* School Letterhead Header */}
-          <div className="border-b-2 border-emerald-600 pb-5 text-center space-y-1.5">
-            <div className="inline-flex items-center gap-2">
-              <div className={`h-10 w-10 rounded-xl text-white flex items-center justify-center font-black text-base shadow-sm ${
-                isPrimaryClass(activeCard.classGroup) ? 'bg-amber-600' : 'bg-emerald-600'
-              }`}>
-                {isPrimaryClass(activeCard.classGroup) ? 'GHPS' : 'GHC'}
+          <div className="border-b-2 border-emerald-600 pb-5 text-center space-y-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <img
+                  src={schoolSettings?.logoUrl || DEFAULT_SCHOOL_LOGO_DATA_URI}
+                  alt="School Crest Logo"
+                  className="max-h-full max-w-full object-contain"
+                />
               </div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                {isPrimaryClass(activeCard.classGroup)
-                  ? (schoolSettings?.primarySchoolName || PRIMARY_SCHOOL_NAME)
-                  : (schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME)}
-              </h1>
+              <div className="text-center sm:text-left">
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-tight">
+                  {isPrimaryClass(activeCard.classGroup)
+                    ? (schoolSettings?.primarySchoolName || PRIMARY_SCHOOL_NAME)
+                    : (schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME)}
+                </h1>
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  {isPrimaryClass(activeCard.classGroup)
+                    ? 'Nurturing Young Minds for Global Impact • Early Years & Primary Education'
+                    : (schoolSettings?.motto || 'Excellence in Knowledge, Innovation & Character • High School & Advanced Studies')}
+                </p>
+              </div>
             </div>
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-              {isPrimaryClass(activeCard.classGroup)
-                ? 'Nurturing Young Minds for Global Impact • Early Years & Primary Education'
-                : 'Excellence in Knowledge, Innovation & Character • High School & Advanced Studies'}
-            </p>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
               <span><strong>Web:</strong> {schoolSettings?.website || SCHOOL_CONTACT_DETAILS.website}</span>
               <span>•</span>
@@ -583,6 +591,33 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
                 <p className="text-slate-700 dark:text-slate-300 italic mt-1 bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   "{activeCard.principalRemark}"
                 </p>
+              </div>
+
+              {/* Official School Stamp at the base of the report card, under principal and head teacher comment */}
+              <div className="pt-3 mt-3 border-t border-dashed border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="space-y-0.5 text-center sm:text-left">
+                  <span className="text-[9.5px] font-black uppercase tracking-widest text-slate-400 block">
+                    Institutional Authentication
+                  </span>
+                  <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Official Certified Terminal Assessment</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    Session: {activeCard.academicSession} • Date Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+
+                {/* School Stamp Image */}
+                <div className="relative shrink-0 flex items-center justify-center p-1">
+                  <div className="h-24 w-24 sm:h-28 sm:w-28 flex items-center justify-center transform -rotate-6 hover:rotate-0 transition-transform duration-200">
+                    <img
+                      src={schoolSettings?.stampUrl || DEFAULT_SCHOOL_STAMP_DATA_URI}
+                      alt="Official School Stamp"
+                      className="max-h-full max-w-full object-contain filter drop-shadow-sm opacity-90"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

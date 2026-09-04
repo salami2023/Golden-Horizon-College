@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Settings,
   Save,
@@ -13,7 +13,13 @@ import {
   Phone,
   Globe,
   Baby,
-  ExternalLink
+  ExternalLink,
+  Upload,
+  Image as ImageIcon,
+  Stamp,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { SchoolSettings, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
@@ -23,6 +29,10 @@ import {
   COMBINED_SCHOOL_NAME,
   SCHOOL_CONTACT_DETAILS
 } from '../../utils/sectionHelpers';
+import {
+  DEFAULT_SCHOOL_LOGO_DATA_URI,
+  DEFAULT_SCHOOL_STAMP_DATA_URI
+} from '../../assets/schoolAssets';
 
 interface SchoolSettingsViewProps {
   settings?: SchoolSettings;
@@ -71,7 +81,18 @@ export const SchoolSettingsView: React.FC<SchoolSettingsViewProps> = ({
   const [headTeacherName, setHeadTeacherName] = useState(
     settings?.headTeacherName || 'Mrs. Folashade Adeleke'
   );
+  const [logoUrl, setLogoUrl] = useState<string>(
+    settings?.logoUrl || DEFAULT_SCHOOL_LOGO_DATA_URI
+  );
+  const [stampUrl, setStampUrl] = useState<string>(
+    settings?.stampUrl || DEFAULT_SCHOOL_STAMP_DATA_URI
+  );
+  const [logoUploadMsg, setLogoUploadMsg] = useState<string | null>(null);
+  const [stampUploadMsg, setStampUploadMsg] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const stampInputRef = useRef<HTMLInputElement>(null);
 
   // RBAC Permission Check: Administrator, School Principal and Head Teacher have full access to school setup
   const canManageSetup = [
@@ -95,8 +116,62 @@ export const SchoolSettingsView: React.FC<SchoolSettingsViewProps> = ({
       if (settings.currentTerm) setCurrentTerm(settings.currentTerm);
       if (settings.principalName) setPrincipalName(settings.principalName);
       if (settings.headTeacherName) setHeadTeacherName(settings.headTeacherName);
+      if (settings.logoUrl) setLogoUrl(settings.logoUrl);
+      if (settings.stampUrl) setStampUrl(settings.stampUrl);
     }
   }, [settings]);
+
+  // Handle Logo file upload
+  const handleLogoUpload = (file: File) => {
+    if (!canManageSetup) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload a valid image file (PNG, JPG, SVG, WebP)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setLogoUrl(dataUrl);
+        setLogoUploadMsg('New logo uploaded successfully!');
+        setTimeout(() => setLogoUploadMsg(null), 3500);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Stamp file upload
+  const handleStampUpload = (file: File) => {
+    if (!canManageSetup) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload a valid image file (PNG, SVG, or WebP recommended)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setStampUrl(dataUrl);
+        setStampUploadMsg('Official school stamp uploaded successfully!');
+        setTimeout(() => setStampUploadMsg(null), 3500);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetLogo = () => {
+    if (!canManageSetup) return;
+    setLogoUrl(DEFAULT_SCHOOL_LOGO_DATA_URI);
+    setLogoUploadMsg('Default Golden Horizon crest restored!');
+    setTimeout(() => setLogoUploadMsg(null), 3000);
+  };
+
+  const handleResetStamp = () => {
+    if (!canManageSetup) return;
+    setStampUrl(DEFAULT_SCHOOL_STAMP_DATA_URI);
+    setStampUploadMsg('Official Golden Horizon stamp restored!');
+    setTimeout(() => setStampUploadMsg(null), 3000);
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +193,9 @@ export const SchoolSettingsView: React.FC<SchoolSettingsViewProps> = ({
         academicSession,
         currentTerm,
         principalName,
-        headTeacherName
+        headTeacherName,
+        logoUrl,
+        stampUrl
       });
     }
     setIsSaved(true);
@@ -176,6 +253,206 @@ export const SchoolSettingsView: React.FC<SchoolSettingsViewProps> = ({
 
       <form onSubmit={handleSave} className="space-y-6 text-xs">
         
+        {/* Institutional Branding: School Logo & School Stamp Upload Section */}
+        <div className="p-6 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-blue-100 dark:border-blue-900/50 pb-4">
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <ImageIcon className="h-5 w-5 text-blue-600" /> Institutional Visual Identity & Official Stamp
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Manage the authoritative school crest logo used across the portal and the verified school stamp applied to terminal report cards.
+              </p>
+            </div>
+            <span className="self-start sm:self-auto px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+              Admin &amp; Executive Authority Only
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Section 1: School Logo Upload */}
+            <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 text-xs">
+                    <ImageIcon className="h-4 w-4 text-blue-600" /> Official School Logo / Crest
+                  </span>
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> System Default Loaded
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                  This logo represents Golden Horizon College &amp; Nursery/Primary School. It appears in the sidebar brand header, top navigation bar, student result cards, parent portal, and official documents.
+                </p>
+
+                {logoUploadMsg && (
+                  <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {logoUploadMsg}
+                  </div>
+                )}
+
+                {/* Logo Preview & Drop Area */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files?.[0]) handleLogoUpload(e.dataTransfer.files[0]);
+                  }}
+                  className="p-4 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center gap-4 transition hover:border-blue-400"
+                >
+                  <div className="relative shrink-0 flex items-center justify-center h-28 w-28 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 shadow-sm">
+                    {logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt="Golden Horizon School Logo"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <ImageIcon className="h-10 w-10 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 text-center sm:text-left space-y-1.5">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                      Golden Horizon Crest
+                    </span>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
+                      Drag and drop image here, or browse from computer. Recommended: High-res PNG, SVG, or JPG (500x500px).
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1 justify-center sm:justify-start">
+                      <input
+                        type="file"
+                        ref={logoInputRef}
+                        accept="image/*"
+                        disabled={!canManageSetup}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]);
+                        }}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        disabled={!canManageSetup}
+                        onClick={() => logoInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1.5 shadow-sm transition disabled:opacity-50 cursor-pointer"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> Upload School Logo
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canManageSetup}
+                        onClick={handleResetLogo}
+                        title="Reset to default Golden Horizon attachment crest"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[11px] flex items-center gap-1 transition disabled:opacity-50 cursor-pointer"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Reset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span>Display target: All App Headers &amp; Letterheads</span>
+                <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">Active Everywhere</span>
+              </div>
+            </div>
+
+            {/* Section 2: School Stamp Upload */}
+            <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 text-xs">
+                    <Stamp className="h-4 w-4 text-indigo-600" /> Official School Stamp / Seal
+                  </span>
+                  <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Verified Seal Ready
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                  Official school stamp applied at the base of every terminal report card, positioned directly beneath the Principal and Head Teacher's comments and signature.
+                </p>
+
+                {stampUploadMsg && (
+                  <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {stampUploadMsg}
+                  </div>
+                )}
+
+                {/* Stamp Preview & Drop Area */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files?.[0]) handleStampUpload(e.dataTransfer.files[0]);
+                  }}
+                  className="p-4 rounded-xl border-2 border-dashed border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/30 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center gap-4 transition hover:border-indigo-400"
+                >
+                  <div className="relative shrink-0 flex items-center justify-center h-28 w-28 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 shadow-sm">
+                    {stampUrl ? (
+                      <div className="transform -rotate-6 transition hover:rotate-0">
+                        <img
+                          src={stampUrl}
+                          alt="Official Golden Horizon Stamp"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <Stamp className="h-10 w-10 text-slate-400" />
+                    )}
+                    <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[8px] font-bold bg-indigo-600 text-white uppercase shadow-xs">
+                      Official
+                    </span>
+                  </div>
+                  <div className="flex-1 text-center sm:text-left space-y-1.5">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                      Official Certification Stamp
+                    </span>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
+                      Drag and drop image here. Transparent PNG or SVG recommended so it stamps cleanly over white report paper.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1 justify-center sm:justify-start">
+                      <input
+                        type="file"
+                        ref={stampInputRef}
+                        accept="image/*"
+                        disabled={!canManageSetup}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleStampUpload(e.target.files[0]);
+                        }}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        disabled={!canManageSetup}
+                        onClick={() => stampInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 shadow-sm transition disabled:opacity-50 cursor-pointer"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> Upload School Stamp
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canManageSetup}
+                        onClick={handleResetStamp}
+                        title="Reset to default official Golden Horizon stamp"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[11px] flex items-center gap-1 transition disabled:opacity-50 cursor-pointer"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Reset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span>Display target: Base of Report Cards</span>
+                <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">Under Principal/Head Remark</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
         {/* Dual Section Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           

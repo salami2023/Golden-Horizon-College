@@ -32,6 +32,7 @@ import {
 } from 'recharts';
 import { Student, Teacher, Invoice, CBTExam, Announcement, UserRole, SchoolSettings } from '../../types';
 import { useRealTime } from '../../context/RealTimeContext';
+import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../../assets/schoolAssets';
 import {
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
@@ -208,17 +209,26 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* Banner Greeting */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 text-white border border-slate-800 shadow-sm">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-semibold mb-2">
-              <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-              {activeSchoolName}
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-2xl bg-white p-1.5 shadow-lg border border-white/20 flex items-center justify-center">
+              <img
+                src={schoolSettings?.logoUrl || DEFAULT_SCHOOL_LOGO_DATA_URI}
+                alt="Golden Horizon Crest"
+                className="max-h-full max-w-full object-contain"
+              />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              {currentRoleConfig.welcome}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-              {currentRoleConfig.roleLabel} • {activeSession} • {activeTerm} Overview
-            </p>
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-semibold mb-1">
+                <Sparkles className="h-3.5 w-3.5 text-blue-400" />
+                {activeSchoolName}
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+                {currentRoleConfig.welcome}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 mt-0.5 max-w-xl">
+                {currentRoleConfig.roleLabel} • {activeSession} • {activeTerm} Overview
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center gap-2 shrink-0">

@@ -253,6 +253,8 @@ export interface SchoolSettings {
   principalName: string;
   headTeacherName?: string;
   gradingSystem: string;
+  logoUrl?: string;
+  stampUrl?: string;
 }
 
 export interface ConnectedPeer {

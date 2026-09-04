@@ -15,6 +15,7 @@ import {
 import { UserRole, SchoolThemeConfig } from '../types';
 import { RealTimeSyncBadge } from './RealTimeSyncBadge';
 import { useRealTime } from '../context/RealTimeContext';
+import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../assets/schoolAssets';
 
 interface NavbarProps {
   currentRole: UserRole;
@@ -59,8 +60,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Brand & Academic Term Badge */}
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 border border-blue-500/20">
-              <GraduationCap className="h-5 w-5" />
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 shadow-md shadow-blue-600/15 border border-slate-200 dark:border-slate-700 p-1">
+              <img
+                src={schoolSettings?.logoUrl || DEFAULT_SCHOOL_LOGO_DATA_URI}
+                alt="School Logo"
+                className="h-full w-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
