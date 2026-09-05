@@ -15,7 +15,9 @@ import {
   AlertCircle,
   X,
   GraduationCap,
-  Baby
+  Baby,
+  KeyRound,
+  CheckCircle2
 } from 'lucide-react';
 import { Teacher, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
@@ -76,6 +78,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
     isHeadTeacher ? 'Numeracy, Literacy' : 'Mathematics, Further Maths'
   );
   const [formClass, setFormClass] = useState(isHeadTeacher ? 'Basic 1' : 'Grade 10 A');
+  const [provisionNotice, setProvisionNotice] = useState<string | null>(null);
 
   // RBAC Permission: Administrator, School Principal, Head Teacher have full access
   const hasFullAccess = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
@@ -123,17 +126,19 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasFullAccess) {
-      alert('Access Denied: Only Administrator, School Principal, and Head Teacher can add staff members.');
+      alert('Access Denied: Only Pioneer, Administrator, School Principal, and Head Teacher can add staff members.');
       return;
     }
-    if (!name) return;
+    if (!name.trim()) return;
+
+    const registeredEmail = email.trim() || `${name.toLowerCase().trim().replace(/[^a-z0-9]/g, '.')}@goldenhorizon.edu.ng`;
 
     const newTeacher: Teacher = {
       id: `tch-${Date.now()}`,
-      staffId: `KS-STF-${Math.floor(100 + Math.random() * 900)}`,
-      name,
-      email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@kwikschools.com`,
-      phone: phone || '+234 800 123 4567',
+      staffId: `GH-STF-${Math.floor(100 + Math.random() * 900)}`,
+      name: name.trim(),
+      email: registeredEmail,
+      phone: phone.trim() || '+234 800 123 4567',
       qualification,
       subjects: subjectsText.split(',').map((s) => s.trim()).filter(Boolean),
       formClass,
@@ -143,6 +148,9 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
 
     onAddTeacher(newTeacher);
     setShowAddModal(false);
+    setProvisionNotice(
+      `Teacher "${newTeacher.name}" added successfully! Registered email "${newTeacher.email}" is now active for portal login with an initial empty password.`
+    );
     setName('');
     setEmail('');
   };
@@ -243,6 +251,25 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
           </button>
         )}
       </div>
+
+      {/* Teacher Authentication Provision Notice Banner */}
+      {provisionNotice && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 flex items-start justify-between gap-3 text-emerald-900 dark:text-emerald-200 animate-in fade-in duration-300">
+          <div className="flex items-start gap-2.5">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+            <div className="text-xs">
+              <p className="font-bold text-slate-900 dark:text-white">Staff Login Account Active</p>
+              <p className="mt-0.5 text-emerald-800 dark:text-emerald-300">{provisionNotice}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setProvisionNotice(null)}
+            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 p-1 rounded-lg"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Admin Section Tabs */}
       {!isPrincipal && !isHeadTeacher && (
@@ -555,14 +582,21 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Email Address</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Email Address <span className="text-blue-600 dark:text-blue-400 font-bold text-[11px]">(Login Username)</span> <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="email"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="teacher@kwikschools.com"
+                  placeholder="e.g. teacher.name@example.com"
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                  <KeyRound className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                  This email is the login username. Default password will be empty on their first login.
+                </p>
               </div>
 
               <div>

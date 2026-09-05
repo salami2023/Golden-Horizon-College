@@ -1,4 +1,4 @@
-import { UserRole, SchoolSettings, SchoolSubject } from '../types';
+import { UserRole, SchoolSettings, SchoolSubject, SchoolClass, Teacher, UserAccount } from '../types';
 import { DEFAULT_SCHOOL_LOGO_DATA_URI, DEFAULT_SCHOOL_STAMP_DATA_URI } from '../assets/schoolAssets';
 
 export const SECONDARY_CLASSES = [
@@ -158,6 +158,73 @@ export function filterTeachersByRole<T extends { formClass?: string; subjects: s
     });
   }
   return teachers;
+}
+
+/**
+ * Resolves all class names assigned to a teacher based on formClass, assignedClasses,
+ * and classes in the school directory where this teacher is assigned as classTeacher.
+ */
+export function getAssignedClassesForTeacher(
+  teacher: Teacher | null | undefined,
+  allClasses: SchoolClass[] = []
+): string[] {
+  if (!teacher) return [];
+  const assigned = new Set<string>();
+
+  if (teacher.formClass && teacher.formClass.trim()) {
+    assigned.add(teacher.formClass.trim());
+  }
+
+  if (Array.isArray(teacher.assignedClasses)) {
+    teacher.assignedClasses.forEach((c) => {
+      if (c && c.trim()) assigned.add(c.trim());
+    });
+  }
+
+  if (allClasses && allClasses.length > 0) {
+    allClasses.forEach((cls) => {
+      if (
+        (cls.classTeacherId && cls.classTeacherId === teacher.id) ||
+        (cls.classTeacherName && cls.classTeacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase())
+      ) {
+        assigned.add(cls.name.trim());
+      }
+    });
+  }
+
+  return Array.from(assigned);
+}
+
+/**
+ * Finds the currently active Teacher profile for the authenticated user,
+ * checking teacherId, registered email, or name.
+ */
+export function resolveCurrentTeacher(
+  currentUser: UserAccount | null | undefined,
+  teachers: Teacher[] = []
+): Teacher | null {
+  if (!currentUser) return teachers[0] || null;
+  if (currentUser.teacherId) {
+    const found = teachers.find((t) => t.id === currentUser.teacherId);
+    if (found) return found;
+  }
+  const cleanEmail = (currentUser.email || '').trim().toLowerCase();
+  if (cleanEmail) {
+    const byEmail = teachers.find((t) => (t.email || '').trim().toLowerCase() === cleanEmail);
+    if (byEmail) return byEmail;
+  }
+  const cleanName = (currentUser.name || '').trim().toLowerCase();
+  if (cleanName) {
+    const byName = teachers.find((t) => (t.name || '').trim().toLowerCase() === cleanName);
+    if (byName) return byName;
+  }
+
+  // Fallback to first teacher if in teacher role
+  if (currentUser.role === 'teacher' && teachers.length > 0) {
+    return teachers[0];
+  }
+
+  return null;
 }
 
 export const SECONDARY_SCHOOL_NAME = 'Golden Horizon College';

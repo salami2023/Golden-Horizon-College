@@ -260,6 +260,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     qualification: 'Ph.D. Mathematics Education',
     subjects: ['Further Mathematics', 'Mathematics'],
     formClass: 'Grade 10 A',
+    assignedClasses: ['Grade 10 A', 'Grade 10 B'],
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200',
     joinDate: '2021-09-01'
   },
@@ -272,6 +273,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     qualification: 'M.Ed. English Literature',
     subjects: ['English Language', 'Literature in English'],
     formClass: 'Grade 10 B',
+    assignedClasses: ['Grade 10 B', 'Grade 11 Science'],
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
     joinDate: '2020-01-15'
   },
@@ -284,6 +286,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     qualification: 'B.Sc. Physics & Robotics',
     subjects: ['Physics', 'Computer Science'],
     formClass: 'Grade 11 Science',
+    assignedClasses: ['Grade 11 Science', 'Grade 10 A'],
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
     joinDate: '2022-08-20'
   },
@@ -296,6 +299,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     qualification: 'B.Ed. Early Childhood Education (Montessori Certified)',
     subjects: ['Literacy / English Studies', 'Phonics & Spelling', 'Sensory Exploration & Rhymes'],
     formClass: 'Nursery 1',
+    assignedClasses: ['Nursery 1', 'Nursery 2'],
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
     joinDate: '2019-09-10'
   },
@@ -308,6 +312,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     qualification: 'B.Sc. Primary Education & Quantitative Methods',
     subjects: ['Numeracy / Mathematics', 'Basic Science & Technology', 'Quantitative Reasoning'],
     formClass: 'Basic 5',
+    assignedClasses: ['Basic 5', 'Basic 4'],
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
     joinDate: '2020-04-01'
   },
@@ -320,6 +325,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     qualification: 'NCE & B.Ed. Elementary Curriculum',
     subjects: ['Social Studies & Civic Habits', 'Verbal Reasoning', 'Creative & Cultural Arts (CCA)'],
     formClass: 'Basic 3',
+    assignedClasses: ['Basic 3', 'Basic 1'],
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
     joinDate: '2021-01-12'
   }

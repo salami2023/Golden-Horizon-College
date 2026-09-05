@@ -10,11 +10,17 @@ import {
   Calendar,
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  LogOut,
+  KeyRound,
+  Phone,
+  Mail,
+  User
 } from 'lucide-react';
 import { UserRole, SchoolThemeConfig } from '../types';
 import { RealTimeSyncBadge } from './RealTimeSyncBadge';
 import { useRealTime } from '../context/RealTimeContext';
+import { useAuth } from '../context/AuthContext';
 import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../assets/schoolAssets';
 
 interface NavbarProps {
@@ -23,6 +29,7 @@ interface NavbarProps {
   themeConfig: SchoolThemeConfig;
   onOpenCustomizer: () => void;
   onSearch: (query: string) => void;
+  onSelectTab?: (tab: any) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,9 +37,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   onRoleChange,
   themeConfig,
   onOpenCustomizer,
-  onSearch
+  onSearch,
+  onSelectTab
 }) => {
   const { schoolSettings } = useRealTime();
+  const { currentUser, logout, setIsPasswordSetupOpen } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -163,20 +172,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {/* User Role Switcher Dropdown */}
+          {/* User Profile & Role Switcher Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-              className="flex items-center gap-2.5 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              className="flex items-center gap-2.5 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
-              <div className="flex h-8.5 w-8.5 items-center justify-center rounded-full bg-blue-600 font-bold text-[9px] text-white">
-                <UserCheck className="h-4 w-4" />
+              <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-blue-600 font-bold text-[10px] text-white shadow-sm">
+                {currentUser?.name
+                  ? currentUser.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')
+                  : <UserCheck className="h-4 w-4" />}
               </div>
-              <div className="text-left hidden md:block">
-                <div className="text-[9px] font-semibold text-slate-800 dark:text-white leading-tight">
-                  {roleLabels[currentRole].title}
+              <div className="text-left hidden md:block max-w-[140px]">
+                <div className="text-[9.5px] font-bold text-slate-800 dark:text-white leading-tight truncate">
+                  {currentUser?.name || roleLabels[currentRole].title}
                 </div>
-                <div className="text-[8px] text-slate-500 dark:text-slate-400">
+                <div className="text-[8px] text-blue-600 dark:text-blue-400 font-medium truncate">
                   {roleLabels[currentRole].subtitle}
                 </div>
               </div>
@@ -184,29 +199,95 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {showRoleDropdown && (
-              <div className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl z-50 p-2 space-y-1">
-                <div className="px-3 py-2 text-[8px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                  Select System Role View
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl z-50 p-2.5 space-y-2">
+                
+                {/* User Card */}
+                {currentUser && (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10.5px] font-bold text-slate-900 dark:text-white truncate">
+                        {currentUser.name}
+                      </span>
+                      <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
+                        {currentUser.role.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-slate-500 dark:text-slate-400 font-mono truncate flex items-center gap-1">
+                      <Mail className="w-2.5 h-2.5 text-slate-400" />
+                      {currentUser.email}
+                    </p>
+                    {currentUser.phone && (
+                      <p className="text-[8.5px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                        <Phone className="w-2.5 h-2.5 text-slate-400" />
+                        {currentUser.phone}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Account Setup & Password Action */}
+                <button
+                  onClick={() => {
+                    setShowRoleDropdown(false);
+                    if (onSelectTab) {
+                      onSelectTab('account_setup');
+                    } else {
+                      setIsPasswordSetupOpen(true);
+                    }
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-[9px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50/70 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 transition flex items-center justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                    <KeyRound className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    Account Setup & Password
+                  </span>
+                  <span className="text-[7.5px] px-1.5 py-0.5 rounded bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold">
+                    {currentUser?.hasSetPassword ? 'Configured' : 'Set Password'}
+                  </span>
+                </button>
+
+                {/* Switch Role View */}
+                <div className="pt-1">
+                  <div className="px-2 py-1 text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">
+                    Preview System Role View
+                  </div>
+                  <div className="max-h-44 overflow-y-auto space-y-0.5">
+                    {(Object.keys(roleLabels) as UserRole[]).map((roleKey) => (
+                      <button
+                        key={roleKey}
+                        onClick={() => {
+                          onRoleChange(roleKey);
+                          setShowRoleDropdown(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[8.5px] font-medium flex items-center justify-between transition ${
+                          currentRole === roleKey
+                            ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 font-bold'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{roleLabels[roleKey].title}</span>
+                        <span className={`text-[7px] px-1 py-0.5 rounded font-semibold ${roleLabels[roleKey].color}`}>
+                          {roleLabels[roleKey].badge}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                {(Object.keys(roleLabels) as UserRole[]).map((roleKey) => (
+
+                {/* Sign Out Button */}
+                <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800">
                   <button
-                    key={roleKey}
                     onClick={() => {
-                      onRoleChange(roleKey);
                       setShowRoleDropdown(false);
+                      logout();
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[8.5px] font-medium flex items-center justify-between transition ${
-                      currentRole === roleKey
-                        ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 font-bold'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
+                    className="w-full text-left px-3 py-2 rounded-xl text-[9px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition flex items-center gap-2"
                   >
-                    <span>{roleLabels[roleKey].title}</span>
-                    <span className={`text-[7.5px] px-1.5 py-0.5 rounded font-semibold ${roleLabels[roleKey].color}`}>
-                      {roleLabels[roleKey].badge}
-                    </span>
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out of Portal</span>
                   </button>
-                ))}
+                </div>
+
               </div>
             )}
           </div>

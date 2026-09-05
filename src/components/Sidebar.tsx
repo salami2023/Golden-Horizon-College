@@ -20,7 +20,8 @@ import {
   ShieldAlert,
   Sparkles,
   Globe,
-  Phone
+  Phone,
+  KeyRound
 } from 'lucide-react';
 import { UserRole, SchoolThemeConfig } from '../types';
 import { useRealTime } from '../context/RealTimeContext';
@@ -49,7 +50,8 @@ export type ActiveTab =
   | 'attendance'
   | 'parent_portal'
   | 'audit_logs'
-  | 'settings';
+  | 'settings'
+  | 'account_setup';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -193,6 +195,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Settings,
       roles: ['super_admin', 'pioneer', 'head_teacher', 'principal'],
       badge: 'Setup'
+    },
+    {
+      id: 'account_setup' as ActiveTab,
+      label: 'Account & Password',
+      icon: KeyRound,
+      roles: ['super_admin', 'pioneer', 'head_teacher', 'principal', 'teacher', 'finance', 'parent', 'student'],
+      badge: 'Security'
     }
   ];
 

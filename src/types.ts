@@ -8,6 +8,22 @@ export type UserRole =
   | 'parent' 
   | 'student';
 
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string; // Used as username
+  phone: string;
+  role: UserRole;
+  password?: string; // Default empty string ""
+  hasSetPassword: boolean; // false until user sets password on setup page
+  avatar?: string;
+  createdAt: string;
+  lastLoginAt?: string;
+  resetToken?: string;
+  resetTokenExpiry?: string;
+  teacherId?: string;
+}
+
 export interface Student {
   id: string;
   admissionNo: string;
@@ -40,6 +56,7 @@ export interface Teacher {
   qualification: string;
   subjects: string[];
   formClass?: string; // Class they manage as Form Teacher
+  assignedClasses?: string[]; // Classes assigned to this academic staff member
   avatar: string;
   joinDate: string;
 }

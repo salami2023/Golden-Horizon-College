@@ -23,10 +23,14 @@ import {
 import { INITIAL_ANNOUNCEMENTS, INITIAL_FEE_ITEMS } from './data/mockSchoolData';
 
 import { RealTimeProvider, useRealTime } from './context/RealTimeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar, ActiveTab } from './components/Sidebar';
 import { ThemeCustomizerModal } from './components/ThemeCustomizerModal';
+import { PasswordSetupModal } from './components/modals/PasswordSetupModal';
 
+import { LoginView } from './components/views/LoginView';
+import { AccountSetupView } from './components/views/AccountSetupView';
 import { DashboardOverview } from './components/views/DashboardOverview';
 import { ClassesView } from './components/views/ClassesView';
 import { SubjectManagementView } from './components/views/SubjectManagementView';
@@ -136,6 +140,34 @@ function AppContent() {
   // Real-time mutator proxies attaching active role
   const actor = { role: currentRole, name: currentRole.toUpperCase() };
 
+  const {
+    currentUser,
+    isPasswordSetupOpen,
+    setIsPasswordSetupOpen,
+    registerOrSyncTeacherAccount,
+    deleteTeacherAccount,
+    syncTeachersWithUsers
+  } = useAuth();
+
+  // Automatically keep all registered teachers synchronized with the authentication directory
+  useEffect(() => {
+    if (teachers && teachers.length > 0) {
+      syncTeachersWithUsers(teachers);
+    }
+  }, [teachers, syncTeachersWithUsers]);
+
+  // Synchronize currentRole with logged-in user role
+  useEffect(() => {
+    if (currentUser?.role && currentUser.role !== currentRole) {
+      setCurrentRole(currentUser.role);
+    }
+  }, [currentUser?.role, setCurrentRole, currentRole]);
+
+  // If no user is authenticated, render the dedicated Login Page
+  if (!currentUser) {
+    return <LoginView />;
+  }
+
   return (
     <div
       className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-['${themeConfig.fontFamily}'] transition-colors duration-200`}
@@ -147,6 +179,7 @@ function AppContent() {
         themeConfig={themeConfig}
         onOpenCustomizer={() => setIsCustomizerOpen(true)}
         onSearch={setGlobalSearch}
+        onSelectTab={setActiveTab}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -206,9 +239,18 @@ function AppContent() {
             {activeTab === 'staff' && (
               <StaffManagement
                 teachers={teachers}
-                onAddTeacher={(t) => addTeacher(t, actor)}
-                onUpdateTeacher={(t) => updateTeacher(t, actor)}
-                onDeleteTeacher={(id) => deleteTeacher(id, actor)}
+                onAddTeacher={(t) => {
+                  addTeacher(t, actor);
+                  registerOrSyncTeacherAccount(t);
+                }}
+                onUpdateTeacher={(t) => {
+                  updateTeacher(t, actor);
+                  registerOrSyncTeacherAccount(t);
+                }}
+                onDeleteTeacher={(id) => {
+                  deleteTeacher(id, actor);
+                  deleteTeacherAccount(id);
+                }}
                 currentRole={currentRole}
               />
             )}
@@ -327,6 +369,10 @@ function AppContent() {
                 currentRole={currentRole}
               />
             )}
+
+            {activeTab === 'account_setup' && (
+              <AccountSetupView />
+            )}
           </div>
         </main>
       </div>
@@ -338,14 +384,23 @@ function AppContent() {
         config={themeConfig}
         onChangeConfig={(cfg) => updateThemeConfig(cfg, actor)}
       />
+
+      {/* Mandatory / On-Demand Password Setup Modal */}
+      <PasswordSetupModal
+        isOpen={isPasswordSetupOpen}
+        onClose={() => setIsPasswordSetupOpen(false)}
+        isMandatory={currentUser ? !currentUser.hasSetPassword : false}
+      />
     </div>
   );
 }
 
 export default function App() {
   return (
-    <RealTimeProvider>
-      <AppContent />
-    </RealTimeProvider>
+    <AuthProvider>
+      <RealTimeProvider>
+        <AppContent />
+      </RealTimeProvider>
+    </AuthProvider>
   );
 }
