@@ -28,6 +28,8 @@ import { Sidebar, ActiveTab } from './components/Sidebar';
 import { ThemeCustomizerModal } from './components/ThemeCustomizerModal';
 
 import { DashboardOverview } from './components/views/DashboardOverview';
+import { ClassesView } from './components/views/ClassesView';
+import { SubjectManagementView } from './components/views/SubjectManagementView';
 import { StudentManagement } from './components/views/StudentManagement';
 import { StaffManagement } from './components/views/StaffManagement';
 import { AcademicsReportCards } from './components/views/AcademicsReportCards';
@@ -113,6 +115,14 @@ function AppContent() {
     }
   }, [currentRole, activeTab]);
 
+  // If role is not authorized for classes management, redirect to dashboard
+  useEffect(() => {
+    const isClassesAuthorized = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
+    if (!isClassesAuthorized && activeTab === 'classes') {
+      setActiveTab('dashboard');
+    }
+  }, [currentRole, activeTab]);
+
   // Apply dark mode class to html element
   useEffect(() => {
     const root = document.documentElement;
@@ -167,6 +177,18 @@ function AppContent() {
                 onNavigate={setActiveTab}
                 currentRole={currentRole}
                 schoolSettings={schoolSettings}
+              />
+            )}
+
+            {activeTab === 'classes' && (
+              <ClassesView
+                currentRole={currentRole}
+              />
+            )}
+
+            {activeTab === 'subjects' && (
+              <SubjectManagementView
+                currentRole={currentRole}
               />
             )}
 

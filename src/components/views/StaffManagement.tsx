@@ -318,23 +318,16 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({
             className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition space-y-4"
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3.5">
-                <img
-                  src={tch.avatar}
-                  alt={tch.name}
-                  className="h-12 w-12 rounded-full object-cover border-2 border-blue-500 shrink-0"
-                />
-                <div>
-                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                    {tch.name}
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold block mt-0.5 w-max">
-                    {tch.staffId}
-                  </span>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-                    <Award className="h-3 w-3 text-amber-500" /> {tch.qualification}
-                  </p>
-                </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  {tch.name}
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold block mt-0.5 w-max">
+                  {tch.staffId}
+                </span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                  <Award className="h-3 w-3 text-amber-500" /> {tch.qualification}
+                </p>
               </div>
 
               {hasFullAccess && (

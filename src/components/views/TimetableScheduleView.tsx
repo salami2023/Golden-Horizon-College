@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { TimetableSlot, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import { useRealTime } from '../../context/RealTimeContext';
 
 interface TimetableScheduleViewProps {
   timetable: TimetableSlot[];
@@ -38,6 +39,10 @@ export const TimetableScheduleView: React.FC<TimetableScheduleViewProps> = ({
   const [selectedDay, setSelectedDay] = useState<string>('Monday');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingSlot, setEditingSlot] = useState<TimetableSlot | null>(null);
+
+  const { schoolSettings } = useRealTime();
+  const activeSessionDisplay = schoolSettings?.academicSession || '2026/2027 Academic Session';
+  const activeTermDisplay = schoolSettings?.currentTerm || '1st Term';
 
   // RBAC Permission Check: Principal, Super Admin, Pioneer have permission to edit/update timetable
   const canManageTimetable = ['super_admin', 'pioneer', 'principal'].includes(currentRole);
@@ -133,7 +138,7 @@ export const TimetableScheduleView: React.FC<TimetableScheduleViewProps> = ({
             School Timetable & Class Schedules
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            2025/2026 Academic Session • Term 2 Weekly Master Schedule.
+            {activeSessionDisplay} • {activeTermDisplay} Weekly Master Schedule.
           </p>
         </div>
 

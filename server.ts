@@ -18,11 +18,15 @@ import {
   INITIAL_BUS_ROUTES,
   INITIAL_HOSTELS,
   INITIAL_BROADCASTS,
-  INITIAL_SCHOOL_SETTINGS
+  INITIAL_SCHOOL_SETTINGS,
+  INITIAL_CLASSES,
+  INITIAL_SUBJECTS
 } from "./src/data/mockSchoolData";
 import {
   Student,
   Teacher,
+  SchoolClass,
+  SchoolSubject,
   Invoice,
   PaymentTransaction,
   StudentReportCard,
@@ -46,6 +50,8 @@ const __dirname = path.dirname(__filename);
 
 // Initial Authoritative Server State
 interface ServerState {
+  classes: SchoolClass[];
+  subjects: SchoolSubject[];
   students: Student[];
   teachers: Teacher[];
   invoices: Invoice[];
@@ -69,6 +75,8 @@ const DB_FILE = path.join(DATA_DIR, "school_database.json");
 const BACKUP_FILE = path.join(DATA_DIR, "school_database.backup.json");
 
 const defaultInitialState: ServerState = {
+  classes: [...INITIAL_CLASSES],
+  subjects: [...INITIAL_SUBJECTS],
   students: [...INITIAL_STUDENTS],
   teachers: [...INITIAL_TEACHERS],
   invoices: [...INITIAL_INVOICES],
@@ -144,6 +152,8 @@ function loadPersistedState(): ServerState {
       if (parsed && typeof parsed === "object") {
         console.log(`[Database] Preserving existing database from ${DB_FILE}. All records retained across feature updates!`);
         return {
+          classes: Array.isArray(parsed.classes) && parsed.classes.length > 0 ? parsed.classes : [...defaultInitialState.classes],
+          subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : [...defaultInitialState.subjects],
           students: Array.isArray(parsed.students) ? parsed.students : [...defaultInitialState.students],
           teachers: Array.isArray(parsed.teachers) ? parsed.teachers : [...defaultInitialState.teachers],
           invoices: Array.isArray(parsed.invoices) ? parsed.invoices : [...defaultInitialState.invoices],
@@ -334,9 +344,7 @@ async function startServer() {
 
           let isAuthorized = false;
 
-          if (entity === "student") {
-            isAuthorized = isAdminOrHead;
-          } else if (entity === "staff") {
+          if (entity === "student" || entity === "staff" || entity === "class" || entity === "school_class" || entity === "subject") {
             isAuthorized = isAdminOrHead;
           } else if (entity === "report_card") {
             isAuthorized = isTeacherOrAdmin;
@@ -361,7 +369,33 @@ async function startServer() {
             return;
           }
 
-          if (entity === "student") {
+          if (entity === "class" || entity === "school_class") {
+            if (action === "create") {
+              schoolState.classes = [data, ...schoolState.classes];
+              auditMsg = `Created new class: ${data.name} (${data.section})`;
+            } else if (action === "update") {
+              schoolState.classes = schoolState.classes.map((c) => (c.id === data.id ? { ...c, ...data } : c));
+              auditMsg = `Updated class configuration for ${data.name}`;
+            } else if (action === "delete") {
+              schoolState.classes = schoolState.classes.filter((c) => c.id !== data.id);
+              schoolState.teachers = schoolState.teachers.map((t) => t.formClass === data.name ? { ...t, formClass: undefined } : t);
+              auditMsg = `Deleted class ${data.name || data.id}`;
+            } else if (action === "assign_teacher") {
+              const { classId, teacherId, teacherName, className } = data;
+              schoolState.classes = schoolState.classes.map((c) => (c.id === classId ? { ...c, classTeacherId: teacherId, classTeacherName: teacherName } : c));
+              schoolState.teachers = schoolState.teachers.map((t) => (t.id === teacherId ? { ...t, formClass: className } : t));
+              auditMsg = `Assigned ${teacherName} as Form/Class Teacher for ${className}`;
+            } else if (action === "remove_teacher") {
+              const { classId, teacherId, className } = data;
+              schoolState.classes = schoolState.classes.map((c) => (c.id === classId ? { ...c, classTeacherId: undefined, classTeacherName: undefined } : c));
+              if (teacherId) {
+                schoolState.teachers = schoolState.teachers.map((t) => (t.id === teacherId ? { ...t, formClass: undefined } : t));
+              } else {
+                schoolState.teachers = schoolState.teachers.map((t) => (t.formClass === className ? { ...t, formClass: undefined } : t));
+              }
+              auditMsg = `Removed Class Teacher assignment for ${className}`;
+            }
+          } else if (entity === "student") {
             if (action === "create") {
               schoolState.students = [data, ...schoolState.students];
               auditMsg = `Enrolled new student: ${data.firstName} ${data.lastName} (${data.admissionNo})`;
@@ -371,6 +405,26 @@ async function startServer() {
             } else if (action === "delete") {
               schoolState.students = schoolState.students.filter((s) => s.id !== data.id);
               auditMsg = `Removed student record (${data.admissionNo || data.id})`;
+            } else if (action === "promote_demote") {
+              const { studentId, targetClass, previousClass, isPromotion, studentName } = data;
+              schoolState.students = schoolState.students.map((s) => (s.id === studentId ? { ...s, classGroup: targetClass } : s));
+              auditMsg = `${isPromotion ? 'Promoted' : 'Reassigned/Demoted'} student ${studentName || studentId} from ${previousClass} to ${targetClass}`;
+            } else if (action === "bulk_promote_demote") {
+              const { studentIds, targetClass, isPromotion } = data;
+              schoolState.students = schoolState.students.map((s) => (studentIds.includes(s.id) ? { ...s, classGroup: targetClass } : s));
+              auditMsg = `${isPromotion ? 'Bulk promoted' : 'Bulk reassigned'} ${studentIds.length} pupils to ${targetClass}`;
+            } else if (action === "archive") {
+              const { studentId, studentName, status } = data;
+              schoolState.students = schoolState.students.map((s) => (s.id === studentId ? { ...s, status: status || 'Graduated' } : s));
+              auditMsg = `Archived student ${studentName || studentId} (${status || 'Graduated'})`;
+            } else if (action === "bulk_archive") {
+              const { studentIds, status } = data;
+              schoolState.students = schoolState.students.map((s) => (studentIds.includes(s.id) ? { ...s, status: status || 'Graduated' } : s));
+              auditMsg = `Bulk archived ${studentIds.length} pupils (${status || 'Graduated'})`;
+            } else if (action === "reactivate") {
+              const { studentId, studentName } = data;
+              schoolState.students = schoolState.students.map((s) => (s.id === studentId ? { ...s, status: 'Active' } : s));
+              auditMsg = `Re-activated student ${studentName || studentId} to Active status`;
             }
           } else if (entity === "staff") {
             if (action === "create") {
@@ -502,6 +556,95 @@ async function startServer() {
               schoolState.broadcasts = schoolState.broadcasts.filter((bc) => bc.id !== data.id);
               auditMsg = `Removed broadcast dispatch log (${data.channel})`;
             }
+          } else if (entity === "subject") {
+            if (action === "create") {
+              if (actorRole === 'principal' && data.section !== 'Secondary') {
+                logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_CREATE', 'subject', `Principal cannot create subjects for Primary section`);
+                return;
+              }
+              if (actorRole === 'head_teacher' && data.section !== 'Primary') {
+                logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_CREATE', 'subject', `Head Teacher cannot create subjects for Secondary section`);
+                return;
+              }
+              schoolState.subjects = [data, ...schoolState.subjects.filter((s) => s.id !== data.id)];
+              auditMsg = `Added subject ${data.name} (${data.code}) to ${data.section} Curriculum`;
+            } else if (action === "update") {
+              const existing = schoolState.subjects.find((s) => s.id === data.id);
+              if (existing) {
+                if (actorRole === 'principal' && existing.section !== 'Secondary') {
+                  logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_UPDATE', 'subject', `Principal cannot modify Primary subject ${existing.name}`);
+                  return;
+                }
+                if (actorRole === 'head_teacher' && existing.section !== 'Primary') {
+                  logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_UPDATE', 'subject', `Head Teacher cannot modify Secondary subject ${existing.name}`);
+                  return;
+                }
+              }
+              schoolState.subjects = schoolState.subjects.map((s) => (s.id === data.id ? { ...s, ...data } : s));
+              auditMsg = `Updated subject curriculum for ${data.name} (${data.code})`;
+            } else if (action === "delete") {
+              const existing = schoolState.subjects.find((s) => s.id === data.id);
+              if (existing) {
+                if (actorRole === 'principal' && existing.section !== 'Secondary') {
+                  logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_DELETE', 'subject', `Principal cannot delete Primary subject ${existing.name}`);
+                  return;
+                }
+                if (actorRole === 'head_teacher' && existing.section !== 'Primary') {
+                  logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_DELETE', 'subject', `Head Teacher cannot delete Secondary subject ${existing.name}`);
+                  return;
+                }
+              }
+              schoolState.subjects = schoolState.subjects.filter((s) => s.id !== data.id);
+              auditMsg = `Removed subject ${data.name || data.id} from curriculum`;
+            } else if (action === "assign_to_class") {
+              const { subjectId, className } = data;
+              schoolState.subjects = schoolState.subjects.map((s) => {
+                if (s.id === subjectId) {
+                  const classes = s.applicableClasses.includes(className) ? s.applicableClasses : [...s.applicableClasses, className];
+                  return { ...s, applicableClasses: classes };
+                }
+                return s;
+              });
+              auditMsg = `Assigned subject ${data.subjectName || subjectId} to class ${className}`;
+            } else if (action === "remove_from_class") {
+              const { subjectId, className } = data;
+              schoolState.subjects = schoolState.subjects.map((s) => {
+                if (s.id === subjectId) {
+                  return { ...s, applicableClasses: s.applicableClasses.filter((c) => c !== className) };
+                }
+                return s;
+              });
+              auditMsg = `Removed subject ${data.subjectName || subjectId} from class ${className}`;
+            } else if (action === "bulk_assign_to_class") {
+              const { subjectIds, className } = data;
+              schoolState.subjects = schoolState.subjects.map((s) => {
+                if (subjectIds.includes(s.id)) {
+                  const classes = s.applicableClasses.includes(className) ? s.applicableClasses : [...s.applicableClasses, className];
+                  return { ...s, applicableClasses: classes };
+                }
+                return s;
+              });
+              auditMsg = `Bulk assigned ${subjectIds.length} subjects to class ${className}`;
+            } else if (action === "bulk_remove_from_class") {
+              const { subjectIds, className } = data;
+              schoolState.subjects = schoolState.subjects.map((s) => {
+                if (subjectIds.includes(s.id)) {
+                  return { ...s, applicableClasses: s.applicableClasses.filter((c) => c !== className) };
+                }
+                return s;
+              });
+              auditMsg = `Removed ${subjectIds.length} subjects from class ${className}`;
+            } else if (action === "duplicate_curriculum") {
+              const { sourceClassName, targetClassName } = data;
+              schoolState.subjects = schoolState.subjects.map((s) => {
+                if (s.applicableClasses.includes(sourceClassName)) {
+                  const classes = s.applicableClasses.includes(targetClassName) ? s.applicableClasses : [...s.applicableClasses, targetClassName];
+                  return { ...s, applicableClasses: classes };
+                }
+                return s;
+              });
+              auditMsg = `Duplicated curriculum from ${sourceClassName} to ${targetClassName}`;
+            }
           } else if (entity === "settings") {
             schoolState.schoolSettings = { ...schoolState.schoolSettings, ...data };
             auditMsg = `Updated school system settings & term configuration`;
@@ -581,7 +724,7 @@ async function startServer() {
 
       let isAuthorized = false;
 
-      if (entity === "student" || entity === "staff") {
+      if (entity === "student" || entity === "staff" || entity === "class" || entity === "school_class" || entity === "subject") {
         isAuthorized = isAdminOrHead;
       } else if (entity === "report_card" || entity === "attendance") {
         isAuthorized = isTeacherOrAdmin;
@@ -602,7 +745,33 @@ async function startServer() {
         return res.status(403).json({ error: `Unauthorized action on ${entity} for role ${actorRole}` });
       }
 
-      if (entity === "student") {
+      if (entity === "class" || entity === "school_class") {
+        if (action === "create") {
+          schoolState.classes = [data, ...schoolState.classes];
+          auditMsg = `Created new class: ${data.name} (${data.section})`;
+        } else if (action === "update") {
+          schoolState.classes = schoolState.classes.map((c) => (c.id === data.id ? { ...c, ...data } : c));
+          auditMsg = `Updated class configuration for ${data.name}`;
+        } else if (action === "delete") {
+          schoolState.classes = schoolState.classes.filter((c) => c.id !== data.id);
+          schoolState.teachers = schoolState.teachers.map((t) => t.formClass === data.name ? { ...t, formClass: undefined } : t);
+          auditMsg = `Deleted class ${data.name || data.id}`;
+        } else if (action === "assign_teacher") {
+          const { classId, teacherId, teacherName, className } = data;
+          schoolState.classes = schoolState.classes.map((c) => (c.id === classId ? { ...c, classTeacherId: teacherId, classTeacherName: teacherName } : c));
+          schoolState.teachers = schoolState.teachers.map((t) => (t.id === teacherId ? { ...t, formClass: className } : t));
+          auditMsg = `Assigned ${teacherName} as Form/Class Teacher for ${className}`;
+        } else if (action === "remove_teacher") {
+          const { classId, teacherId, className } = data;
+          schoolState.classes = schoolState.classes.map((c) => (c.id === classId ? { ...c, classTeacherId: undefined, classTeacherName: undefined } : c));
+          if (teacherId) {
+            schoolState.teachers = schoolState.teachers.map((t) => (t.id === teacherId ? { ...t, formClass: undefined } : t));
+          } else {
+            schoolState.teachers = schoolState.teachers.map((t) => (t.formClass === className ? { ...t, formClass: undefined } : t));
+          }
+          auditMsg = `Removed Class Teacher assignment for ${className}`;
+        }
+      } else if (entity === "student") {
         if (action === "create") {
           schoolState.students = [data, ...schoolState.students];
           auditMsg = `Enrolled new student: ${data.firstName} ${data.lastName} (${data.admissionNo})`;
@@ -612,6 +781,26 @@ async function startServer() {
         } else if (action === "delete") {
           schoolState.students = schoolState.students.filter((s) => s.id !== data.id);
           auditMsg = `Removed student record (${data.admissionNo || data.id})`;
+        } else if (action === "promote_demote") {
+          const { studentId, targetClass, previousClass, isPromotion, studentName } = data;
+          schoolState.students = schoolState.students.map((s) => (s.id === studentId ? { ...s, classGroup: targetClass } : s));
+          auditMsg = `${isPromotion ? 'Promoted' : 'Reassigned/Demoted'} student ${studentName || studentId} from ${previousClass} to ${targetClass}`;
+        } else if (action === "bulk_promote_demote") {
+          const { studentIds, targetClass, isPromotion } = data;
+          schoolState.students = schoolState.students.map((s) => (studentIds.includes(s.id) ? { ...s, classGroup: targetClass } : s));
+          auditMsg = `${isPromotion ? 'Bulk promoted' : 'Bulk reassigned'} ${studentIds.length} pupils to ${targetClass}`;
+        } else if (action === "archive") {
+          const { studentId, studentName, status } = data;
+          schoolState.students = schoolState.students.map((s) => (s.id === studentId ? { ...s, status: status || 'Graduated' } : s));
+          auditMsg = `Archived student ${studentName || studentId} (${status || 'Graduated'})`;
+        } else if (action === "bulk_archive") {
+          const { studentIds, status } = data;
+          schoolState.students = schoolState.students.map((s) => (studentIds.includes(s.id) ? { ...s, status: status || 'Graduated' } : s));
+          auditMsg = `Bulk archived ${studentIds.length} pupils (${status || 'Graduated'})`;
+        } else if (action === "reactivate") {
+          const { studentId, studentName } = data;
+          schoolState.students = schoolState.students.map((s) => (s.id === studentId ? { ...s, status: 'Active' } : s));
+          auditMsg = `Re-activated student ${studentName || studentId} to Active status`;
         }
       } else if (entity === "staff") {
         if (action === "create") {
@@ -741,6 +930,95 @@ async function startServer() {
           schoolState.broadcasts = schoolState.broadcasts.filter((bc) => bc.id !== data.id);
           auditMsg = `Removed broadcast dispatch log`;
         }
+      } else if (entity === "subject") {
+        if (action === "create") {
+          if (actorRole === 'principal' && data.section !== 'Secondary') {
+            logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_CREATE', 'subject', `Principal cannot create subjects for Primary section`);
+            return res.status(403).json({ error: "Principal can only create subjects for Secondary section" });
+          }
+          if (actorRole === 'head_teacher' && data.section !== 'Primary') {
+            logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_CREATE', 'subject', `Head Teacher cannot create subjects for Secondary section`);
+            return res.status(403).json({ error: "Head Teacher can only create subjects for Primary section" });
+          }
+          schoolState.subjects = [data, ...schoolState.subjects.filter((s) => s.id !== data.id)];
+          auditMsg = `Added subject ${data.name} (${data.code}) to ${data.section} Curriculum`;
+        } else if (action === "update") {
+          const existing = schoolState.subjects.find((s) => s.id === data.id);
+          if (existing) {
+            if (actorRole === 'principal' && existing.section !== 'Secondary') {
+              logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_UPDATE', 'subject', `Principal cannot modify Primary subject ${existing.name}`);
+              return res.status(403).json({ error: "Principal cannot modify Primary subjects" });
+            }
+            if (actorRole === 'head_teacher' && existing.section !== 'Primary') {
+              logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_UPDATE', 'subject', `Head Teacher cannot modify Secondary subject ${existing.name}`);
+              return res.status(403).json({ error: "Head Teacher cannot modify Secondary subjects" });
+            }
+          }
+          schoolState.subjects = schoolState.subjects.map((s) => (s.id === data.id ? { ...s, ...data } : s));
+          auditMsg = `Updated subject curriculum for ${data.name} (${data.code})`;
+        } else if (action === "delete") {
+          const existing = schoolState.subjects.find((s) => s.id === data.id);
+          if (existing) {
+            if (actorRole === 'principal' && existing.section !== 'Secondary') {
+              logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_DELETE', 'subject', `Principal cannot delete Primary subject ${existing.name}`);
+              return res.status(403).json({ error: "Principal cannot delete Primary subjects" });
+            }
+            if (actorRole === 'head_teacher' && existing.section !== 'Primary') {
+              logAudit(actorRole, actorName, 'BLOCKED_SUBJECT_DELETE', 'subject', `Head Teacher cannot delete Secondary subject ${existing.name}`);
+              return res.status(403).json({ error: "Head Teacher cannot delete Secondary subjects" });
+            }
+          }
+          schoolState.subjects = schoolState.subjects.filter((s) => s.id !== data.id);
+          auditMsg = `Removed subject ${data.name || data.id} from curriculum`;
+        } else if (action === "assign_to_class") {
+          const { subjectId, className } = data;
+          schoolState.subjects = schoolState.subjects.map((s) => {
+            if (s.id === subjectId) {
+              const classes = s.applicableClasses.includes(className) ? s.applicableClasses : [...s.applicableClasses, className];
+              return { ...s, applicableClasses: classes };
+            }
+            return s;
+          });
+          auditMsg = `Assigned subject ${data.subjectName || subjectId} to class ${className}`;
+        } else if (action === "remove_from_class") {
+          const { subjectId, className } = data;
+          schoolState.subjects = schoolState.subjects.map((s) => {
+            if (s.id === subjectId) {
+              return { ...s, applicableClasses: s.applicableClasses.filter((c) => c !== className) };
+            }
+            return s;
+          });
+          auditMsg = `Removed subject ${data.subjectName || subjectId} from class ${className}`;
+        } else if (action === "bulk_assign_to_class") {
+          const { subjectIds, className } = data;
+          schoolState.subjects = schoolState.subjects.map((s) => {
+            if (subjectIds.includes(s.id)) {
+              const classes = s.applicableClasses.includes(className) ? s.applicableClasses : [...s.applicableClasses, className];
+              return { ...s, applicableClasses: classes };
+            }
+            return s;
+          });
+          auditMsg = `Bulk assigned ${subjectIds.length} subjects to class ${className}`;
+        } else if (action === "bulk_remove_from_class") {
+          const { subjectIds, className } = data;
+          schoolState.subjects = schoolState.subjects.map((s) => {
+            if (subjectIds.includes(s.id)) {
+              return { ...s, applicableClasses: s.applicableClasses.filter((c) => c !== className) };
+            }
+            return s;
+          });
+          auditMsg = `Removed ${subjectIds.length} subjects from class ${className}`;
+        } else if (action === "duplicate_curriculum") {
+          const { sourceClassName, targetClassName } = data;
+          schoolState.subjects = schoolState.subjects.map((s) => {
+            if (s.applicableClasses.includes(sourceClassName)) {
+              const classes = s.applicableClasses.includes(targetClassName) ? s.applicableClasses : [...s.applicableClasses, targetClassName];
+              return { ...s, applicableClasses: classes };
+            }
+            return s;
+          });
+          auditMsg = `Duplicated curriculum from ${sourceClassName} to ${targetClassName}`;
+        }
       } else if (entity === "settings") {
         schoolState.schoolSettings = { ...schoolState.schoolSettings, ...data };
         auditMsg = `Updated school system settings`;
@@ -803,6 +1081,7 @@ async function startServer() {
           }
         };
 
+        mergeCollection("classes");
         mergeCollection("students");
         mergeCollection("teachers");
         mergeCollection("invoices");
@@ -820,9 +1099,13 @@ async function startServer() {
           modified = true;
         }
 
-        if (clientState.schoolSettings && typeof clientState.schoolSettings === "object") {
-          schoolState.schoolSettings = { ...schoolState.schoolSettings, ...clientState.schoolSettings };
-          modified = true;
+        // Server authoritative school settings: do NOT allow stale client snapshots to revert term or session.
+        // Only seed settings if the server has none at all.
+        if (!schoolState.schoolSettings || Object.keys(schoolState.schoolSettings).length === 0) {
+          if (clientState.schoolSettings && typeof clientState.schoolSettings === "object") {
+            schoolState.schoolSettings = { ...clientState.schoolSettings };
+            modified = true;
+          }
         }
 
         if (modified) {

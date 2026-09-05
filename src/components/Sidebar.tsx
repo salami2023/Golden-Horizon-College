@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard,
+  School,
   Users,
   UserCheck,
   FileSpreadsheet,
@@ -27,11 +28,15 @@ import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../assets/schoolAssets';
 import {
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
-  SCHOOL_CONTACT_DETAILS
+  SCHOOL_CONTACT_DETAILS,
+  isPrimaryClass,
+  isSecondaryClass
 } from '../utils/sectionHelpers';
 
 export type ActiveTab =
   | 'dashboard'
+  | 'classes'
+  | 'subjects'
   | 'students'
   | 'staff'
   | 'academics'
@@ -63,7 +68,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   themeConfig
 }) => {
-  const { schoolSettings } = useRealTime();
+  const { schoolSettings, classes } = useRealTime();
+
+  const classesCount = React.useMemo(() => {
+    if (!classes) return 0;
+    if (currentRole === 'head_teacher') {
+      return classes.filter((c) => c.section === 'Primary' || isPrimaryClass(c.name)).length;
+    }
+    if (currentRole === 'principal') {
+      return classes.filter((c) => c.section === 'Secondary' || isSecondaryClass(c.name)).length;
+    }
+    return classes.length;
+  }, [classes, currentRole]);
+
   const navItems = [
     {
       id: 'dashboard' as ActiveTab,
@@ -71,6 +88,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: LayoutDashboard,
       roles: ['super_admin', 'pioneer', 'head_teacher', 'principal', 'teacher', 'bursar', 'finance', 'parent', 'student'],
       badge: 'Live'
+    },
+    {
+      id: 'classes' as ActiveTab,
+      label: 'Classes',
+      icon: School,
+      roles: ['super_admin', 'pioneer', 'head_teacher', 'principal'],
+      badge: `${classesCount || 'Active'}`
+    },
+    {
+      id: 'subjects' as ActiveTab,
+      label: currentRole === 'head_teacher' ? 'Primary Subjects' : currentRole === 'principal' ? 'Secondary Subjects' : 'Subjects & Curriculum',
+      icon: BookOpen,
+      roles: ['super_admin', 'pioneer', 'head_teacher', 'principal'],
+      badge: 'Curriculum'
     },
     {
       id: 'students' as ActiveTab,

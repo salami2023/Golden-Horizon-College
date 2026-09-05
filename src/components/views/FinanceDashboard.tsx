@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Invoice, PaymentTransaction, FeeItem, Student, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import { useRealTime } from '../../context/RealTimeContext';
 
 interface FinanceDashboardProps {
   invoices: Invoice[];
@@ -66,10 +67,15 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
   const [payMethod, setPayMethod] = useState<PaymentTransaction['paymentMethod']>('Bank Transfer');
   const [payCategory, setPayCategory] = useState('Tuition Balance Payment');
 
+  const { schoolSettings } = useRealTime();
+  const currentAcademicSessionClean = schoolSettings?.academicSession ? schoolSettings.academicSession.replace(/ Academic Session/i, '').trim() : '2026/2027';
+  const currentActiveTerm = schoolSettings?.currentTerm || '1st Term';
+  const defaultTermSessionStr = `${currentActiveTerm} ${currentAcademicSessionClean}`;
+
   // New Invoice Form
   const [selectedStudentForInvoice, setSelectedStudentForInvoice] = useState(students[0]?.id || '');
   const [newInvoiceAmount, setNewInvoiceAmount] = useState(1200);
-  const [newInvoiceTerm, setNewInvoiceTerm] = useState('2nd Term 2024/2025');
+  const [newInvoiceTerm, setNewInvoiceTerm] = useState(defaultTermSessionStr);
 
   const totalRevenueInvoiced = invoices.reduce((a, b) => a + b.totalAmount, 0);
   const totalPaid = invoices.reduce((a, b) => a + b.amountPaid, 0);
@@ -126,18 +132,18 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
 
     const newInv: Invoice = {
       id: `inv-${Date.now()}`,
-      invoiceNo: `INV-2025-${Math.floor(1000 + Math.random() * 9000)}`,
+      invoiceNo: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       studentId: std.id,
       studentName: `${std.firstName} ${std.lastName}`,
       classGroup: std.classGroup,
       totalAmount: Number(newInvoiceAmount) || 1200,
       amountPaid: 0,
       balanceDue: Number(newInvoiceAmount) || 1200,
-      dueDate: '2025-04-15',
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'Unpaid',
-      termSession: '2nd Term 2025/2026',
+      termSession: newInvoiceTerm || defaultTermSessionStr,
       items: [
-        { description: 'Tuition Fee (2nd Term)', amount: (Number(newInvoiceAmount) || 1200) * 0.7 },
+        { description: `Tuition Fee (${currentActiveTerm})`, amount: (Number(newInvoiceAmount) || 1200) * 0.7 },
         { description: 'ICT & STEM Laboratory Levy', amount: (Number(newInvoiceAmount) || 1200) * 0.15 },
         { description: 'Sports & Co-Curricular', amount: (Number(newInvoiceAmount) || 1200) * 0.15 }
       ]

@@ -1,6 +1,8 @@
 import {
   Student,
   Teacher,
+  SchoolClass,
+  SchoolSubject,
   StudentReportCard,
   CBTExam,
   Invoice,
@@ -371,52 +373,52 @@ export const INITIAL_INVOICES: Invoice[] = [
     totalAmount: 1200,
     amountPaid: 1200,
     balanceDue: 0,
-    dueDate: '2025-09-15',
+    dueDate: '2026-10-15',
     status: 'Paid',
     items: [
-      { description: 'Tuition Fee - 2nd Term', amount: 850 },
+      { description: 'Tuition Fee - 1st Term', amount: 850 },
       { description: 'Books & Materials Package', amount: 150 },
       { description: 'Development & ICT Levy', amount: 100 },
       { description: 'Uniform & Sports Kit', amount: 100 }
     ],
-    termSession: '2025/2026 Session - 2nd Term'
+    termSession: '2026/2027 Session - 1st Term'
   },
   {
     id: 'inv-1002',
-    invoiceNo: 'INV-2025-002',
+    invoiceNo: 'INV-2026-002',
     studentId: 'std-102',
     studentName: 'David Okonkwo',
     classGroup: 'Grade 10 A',
     totalAmount: 1450,
     amountPaid: 950,
     balanceDue: 500,
-    dueDate: '2025-09-15',
+    dueDate: '2026-10-15',
     status: 'Partial',
     items: [
-      { description: 'Tuition Fee - 2nd Term', amount: 850 },
+      { description: 'Tuition Fee - 1st Term', amount: 850 },
       { description: 'School Bus Shuttle (Route 4)', amount: 250 },
       { description: 'Books & Materials Package', amount: 150 },
       { description: 'Development Levy', amount: 200 }
     ],
-    termSession: '2025/2026 Session - 2nd Term'
+    termSession: '2026/2027 Session - 1st Term'
   },
   {
     id: 'inv-1004',
-    invoiceNo: 'INV-2025-004',
+    invoiceNo: 'INV-2026-004',
     studentId: 'std-104',
     studentName: 'Emmanuel Chukwu',
     classGroup: 'Grade 11 Science',
     totalAmount: 1600,
     amountPaid: 800,
     balanceDue: 800,
-    dueDate: '2025-09-15',
+    dueDate: '2026-10-15',
     status: 'Partial',
     items: [
-      { description: 'Tuition Fee - 2nd Term', amount: 850 },
+      { description: 'Tuition Fee - 1st Term', amount: 850 },
       { description: 'Boarding House Accommodation', amount: 600 },
       { description: 'Science Lab Practicals', amount: 150 }
     ],
-    termSession: '2025/2026 Session - 2nd Term'
+    termSession: '2026/2027 Session - 1st Term'
   }
 ];
 
@@ -463,8 +465,8 @@ export const INITIAL_REPORT_CARDS: StudentReportCard[] = [
     studentName: 'Amina Bello',
     admissionNo: 'KS/2024/001',
     classGroup: 'Grade 10 A',
-    academicSession: '2025/2026',
-    term: '2nd Term',
+    academicSession: '2026/2027',
+    term: '1st Term',
     totalScore: 472,
     averageScore: 94.4,
     classPosition: 1,
@@ -495,8 +497,8 @@ export const INITIAL_REPORT_CARDS: StudentReportCard[] = [
     studentName: 'David Okonkwo',
     admissionNo: 'KS/2024/002',
     classGroup: 'Grade 10 A',
-    academicSession: '2025/2026',
-    term: '2nd Term',
+    academicSession: '2026/2027',
+    term: '1st Term',
     totalScore: 412,
     averageScore: 82.4,
     classPosition: 4,
@@ -527,8 +529,8 @@ export const INITIAL_REPORT_CARDS: StudentReportCard[] = [
     studentName: 'Chidera Obi',
     admissionNo: 'KS/2024/007',
     classGroup: 'Basic 5',
-    academicSession: '2025/2026',
-    term: '2nd Term',
+    academicSession: '2026/2027',
+    term: '1st Term',
     totalScore: 485,
     averageScore: 97.0,
     classPosition: 1,
@@ -559,8 +561,8 @@ export const INITIAL_REPORT_CARDS: StudentReportCard[] = [
     studentName: 'Favour Daniel',
     admissionNo: 'KS/2024/010',
     classGroup: 'Nursery 2',
-    academicSession: '2025/2026',
-    term: '2nd Term',
+    academicSession: '2026/2027',
+    term: '1st Term',
     totalScore: 390,
     averageScore: 97.5,
     classPosition: 1,
@@ -935,8 +937,8 @@ export const INITIAL_BROADCASTS: BroadcastLog[] = [
     id: 'bc-3',
     channel: 'Email',
     recipientGroup: 'Outstanding Fee Debtors',
-    message: 'URGENT: Fee reminder notice for 2nd Term balance. Please visit the Bursary or pay online via Parent Portal.',
-    sentAt: '2025-10-15 11:00',
+    message: 'URGENT: Fee reminder notice for 1st Term balance. Please visit the Bursary or pay online via Parent Portal.',
+    sentAt: '2026-09-15 11:00',
     status: 'Delivered',
     totalRecipients: 84
   },
@@ -945,7 +947,7 @@ export const INITIAL_BROADCASTS: BroadcastLog[] = [
     channel: 'SMS',
     recipientGroup: 'Primary & Nursery Parents',
     message: 'Notice from Head Teacher Office: Early Years and Primary pupils will participate in World Book Day celebration on Thursday. Please dress up in character costumes!',
-    sentAt: '2025-10-21 08:30',
+    sentAt: '2026-09-21 08:30',
     status: 'Delivered',
     totalRecipients: 140
   },
@@ -954,7 +956,7 @@ export const INITIAL_BROADCASTS: BroadcastLog[] = [
     channel: 'SMS',
     recipientGroup: 'Basic 5 Common Entrance Parents',
     message: 'Dear Basic 5 Parents, National Common Entrance Examination intensive coaching starts next Monday at 3:00 PM.',
-    sentAt: '2025-10-22 10:00',
+    sentAt: '2026-09-22 10:00',
     status: 'Delivered',
     totalRecipients: 24
   }
@@ -974,13 +976,933 @@ export const INITIAL_SCHOOL_SETTINGS: SchoolSettings = {
     '+234 808 422 9418'
   ],
   motto: 'Excellence in Knowledge, Innovation & Character',
-  academicSession: '2025/2026 Academic Session',
-  currentTerm: '2nd Term',
+  academicSession: '2026/2027 Academic Session',
+  currentTerm: '1st Term',
   principalName: 'Dr. Elizabeth Sterling',
   headTeacherName: 'Mrs. Folashade Adeleke',
   gradingSystem: 'Grade A: 70-100%, Grade B: 60-69%, Grade C: 50-59%, Grade D: 40-49%, Grade F: <40%',
   logoUrl: DEFAULT_SCHOOL_LOGO_DATA_URI,
   stampUrl: DEFAULT_SCHOOL_STAMP_DATA_URI
 };
+
+export const INITIAL_CLASSES: SchoolClass[] = [
+  // Secondary Section
+  {
+    id: 'cls-sec-101',
+    name: 'Grade 10 A',
+    section: 'Secondary',
+    level: 'Grade 10',
+    arm: 'A',
+    category: 'Senior Secondary',
+    classTeacherId: 'tch-201',
+    classTeacherName: 'Dr. Marcus Vance',
+    capacity: 35,
+    room: 'College Block A - Room 101',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Senior Secondary Grade 10 Alpha Stream'
+  },
+  {
+    id: 'cls-sec-102',
+    name: 'Grade 10 B',
+    section: 'Secondary',
+    level: 'Grade 10',
+    arm: 'B',
+    category: 'Senior Secondary',
+    classTeacherId: 'tch-202',
+    classTeacherName: 'Mrs. Victoria Nwosu',
+    capacity: 35,
+    room: 'College Block A - Room 102',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Senior Secondary Grade 10 Beta Stream'
+  },
+  {
+    id: 'cls-sec-103',
+    name: 'Grade 11 Science',
+    section: 'Secondary',
+    level: 'Grade 11',
+    arm: 'Science',
+    category: 'Senior Secondary',
+    classTeacherId: 'tch-203',
+    classTeacherName: 'Mr. Gabriel Thorne',
+    capacity: 30,
+    room: 'Advanced STEM & Robotics Wing',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Grade 11 Specialized Natural Sciences & Engineering stream'
+  },
+  {
+    id: 'cls-sec-104',
+    name: 'Grade 12 Art',
+    section: 'Secondary',
+    level: 'Grade 12',
+    arm: 'Art',
+    category: 'Senior Secondary',
+    capacity: 30,
+    room: 'Humanities Studio Room 3',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Grade 12 Humanities, Languages & Social Arts class'
+  },
+  {
+    id: 'cls-sec-105',
+    name: 'JSS 1 A',
+    section: 'Secondary',
+    level: 'JSS 1',
+    arm: 'A',
+    category: 'Junior Secondary',
+    capacity: 35,
+    room: 'Junior College Block - Rm 1',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Junior Secondary School 1 Alpha'
+  },
+  {
+    id: 'cls-sec-106',
+    name: 'JSS 1 B',
+    section: 'Secondary',
+    level: 'JSS 1',
+    arm: 'B',
+    category: 'Junior Secondary',
+    capacity: 35,
+    room: 'Junior College Block - Rm 2',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Junior Secondary School 1 Beta'
+  },
+  {
+    id: 'cls-sec-107',
+    name: 'JSS 2 A',
+    section: 'Secondary',
+    level: 'JSS 2',
+    arm: 'A',
+    category: 'Junior Secondary',
+    capacity: 35,
+    room: 'Junior College Block - Rm 3',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Junior Secondary School 2 Alpha'
+  },
+  {
+    id: 'cls-sec-108',
+    name: 'JSS 2 B',
+    section: 'Secondary',
+    level: 'JSS 2',
+    arm: 'B',
+    category: 'Junior Secondary',
+    capacity: 35,
+    room: 'Junior College Block - Rm 4',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Junior Secondary School 2 Beta'
+  },
+  {
+    id: 'cls-sec-109',
+    name: 'JSS 3 A',
+    section: 'Secondary',
+    level: 'JSS 3',
+    arm: 'A',
+    category: 'Junior Secondary',
+    capacity: 35,
+    room: 'Junior College Block - Rm 5',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Junior Secondary School 3 Basic Certificate Exam Class'
+  },
+  {
+    id: 'cls-sec-110',
+    name: 'SSS 1 Science',
+    section: 'Secondary',
+    level: 'SSS 1',
+    arm: 'Science',
+    category: 'Senior Secondary',
+    capacity: 35,
+    room: 'Senior College - Lab 1',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Senior Secondary 1 Sciences'
+  },
+  {
+    id: 'cls-sec-111',
+    name: 'SSS 1 Arts',
+    section: 'Secondary',
+    level: 'SSS 1',
+    arm: 'Arts',
+    category: 'Senior Secondary',
+    capacity: 35,
+    room: 'Senior College - Arts Wing',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Senior Secondary 1 Arts & Humanities'
+  },
+  {
+    id: 'cls-sec-112',
+    name: 'SSS 2 Science',
+    section: 'Secondary',
+    level: 'SSS 2',
+    arm: 'Science',
+    category: 'Senior Secondary',
+    capacity: 35,
+    room: 'Senior College - Lab 2',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Senior Secondary 2 Sciences & Math'
+  },
+  {
+    id: 'cls-sec-113',
+    name: 'SSS 3 Science',
+    section: 'Secondary',
+    level: 'SSS 3',
+    arm: 'Science',
+    category: 'Senior Secondary',
+    capacity: 35,
+    room: 'Senior College - Honors Room',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Senior Secondary 3 WAEC/NECO Examination Class'
+  },
+
+  // Nursery & Primary Section
+  {
+    id: 'cls-pri-201',
+    name: 'Kindergarten',
+    section: 'Primary',
+    level: 'Kindergarten',
+    arm: 'Main',
+    category: 'Early Years',
+    capacity: 25,
+    room: 'Early Years Activity Center A',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Early childhood sensory and foundation learning'
+  },
+  {
+    id: 'cls-pri-202',
+    name: 'Nursery 1',
+    section: 'Primary',
+    level: 'Nursery 1',
+    arm: 'Main',
+    category: 'Early Years',
+    classTeacherId: 'tch-204',
+    classTeacherName: 'Mrs. Blessing Okafor',
+    capacity: 25,
+    room: 'Early Years Nursery Block - Rm 1',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Montessori early literacy & phonics foundation'
+  },
+  {
+    id: 'cls-pri-203',
+    name: 'Nursery 2',
+    section: 'Primary',
+    level: 'Nursery 2',
+    arm: 'Main',
+    category: 'Early Years',
+    capacity: 25,
+    room: 'Early Years Nursery Block - Rm 2',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Pre-primary numeracy and motor-skills development'
+  },
+  {
+    id: 'cls-pri-204',
+    name: 'Basic 1',
+    section: 'Primary',
+    level: 'Basic 1',
+    arm: 'Main',
+    category: 'Primary',
+    capacity: 30,
+    room: 'Primary Block 1 - Room 101',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Elementary Grade 1 fundamental curriculum'
+  },
+  {
+    id: 'cls-pri-205',
+    name: 'Basic 2',
+    section: 'Primary',
+    level: 'Basic 2',
+    arm: 'Main',
+    category: 'Primary',
+    capacity: 30,
+    room: 'Primary Block 1 - Room 102',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Elementary Grade 2 core curriculum'
+  },
+  {
+    id: 'cls-pri-206',
+    name: 'Basic 3',
+    section: 'Primary',
+    level: 'Basic 3',
+    arm: 'Main',
+    category: 'Primary',
+    classTeacherId: 'tch-206',
+    classTeacherName: 'Mrs. Joy Danladi',
+    capacity: 30,
+    room: 'Primary Block 2 - Room 201',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Elementary Grade 3 integrated science and quantitative skills'
+  },
+  {
+    id: 'cls-pri-207',
+    name: 'Basic 4',
+    section: 'Primary',
+    level: 'Basic 4',
+    arm: 'Main',
+    category: 'Primary',
+    capacity: 30,
+    room: 'Primary Block 2 - Room 202',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Elementary Grade 4 intermediate curriculum'
+  },
+  {
+    id: 'cls-pri-208',
+    name: 'Basic 5',
+    section: 'Primary',
+    level: 'Basic 5',
+    arm: 'Main',
+    category: 'Primary',
+    classTeacherId: 'tch-205',
+    classTeacherName: 'Mr. Samuel Adeleke',
+    capacity: 30,
+    room: 'Primary Block 3 - Rm 301',
+    status: 'Active',
+    academicSession: '2026/2027',
+    description: 'Elementary graduating class - National Common Entrance Exam Prep'
+  }
+];
+
+export const INITIAL_SUBJECTS: SchoolSubject[] = [
+  // ==========================================
+  // SECONDARY SCHOOL SUBJECTS (Principal)
+  // ==========================================
+  {
+    id: 'sub-sec-001',
+    name: 'Mathematics',
+    code: 'MTH-SEC',
+    section: 'Secondary',
+    category: 'Core',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3', 'SSS 1', 'SSS 2', 'SSS 3', 'Grade 10', 'Grade 11', 'Grade 12'],
+    applicableClasses: [
+      'Grade 10 A', 'Grade 10 B', 'Grade 11 Science', 'Grade 12 Art',
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B',
+      'SSS 1 Science', 'SSS 1 Arts', 'SSS 1 Commercial',
+      'SSS 2 Science', 'SSS 2 Arts', 'SSS 2 Commercial',
+      'SSS 3 Science', 'SSS 3 Arts', 'SSS 3 Commercial'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 5,
+    passMark: 50,
+    teacherName: 'Dr. Marcus Vance',
+    teacherId: 'tch-201',
+    description: 'Foundational secondary algebra, geometry, trigonometry, and general mathematics curriculum aligned to WAEC/NECO.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-002',
+    name: 'English Language',
+    code: 'ENG-SEC',
+    section: 'Secondary',
+    category: 'Core',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3', 'SSS 1', 'SSS 2', 'SSS 3', 'Grade 10', 'Grade 11', 'Grade 12'],
+    applicableClasses: [
+      'Grade 10 A', 'Grade 10 B', 'Grade 11 Science', 'Grade 12 Art',
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B',
+      'SSS 1 Science', 'SSS 1 Arts', 'SSS 1 Commercial',
+      'SSS 2 Science', 'SSS 2 Arts', 'SSS 2 Commercial',
+      'SSS 3 Science', 'SSS 3 Arts', 'SSS 3 Commercial'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 5,
+    passMark: 50,
+    teacherName: 'Mrs. Victoria Nwosu',
+    teacherId: 'tch-202',
+    description: 'Grammar, comprehension, continuous writing, summary skills, and oral English for senior secondary certifications.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-003',
+    name: 'Civic Education',
+    code: 'CIV-SEC',
+    section: 'Secondary',
+    category: 'Core',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3', 'SSS 1', 'SSS 2', 'SSS 3', 'Grade 10', 'Grade 11', 'Grade 12'],
+    applicableClasses: [
+      'Grade 10 A', 'Grade 10 B', 'Grade 11 Science', 'Grade 12 Art',
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B',
+      'SSS 1 Science', 'SSS 1 Arts', 'SSS 1 Commercial',
+      'SSS 2 Science', 'SSS 2 Arts', 'SSS 2 Commercial',
+      'SSS 3 Science', 'SSS 3 Arts', 'SSS 3 Commercial'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'Democratic governance, human rights, civic responsibilities, and ethical national development.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-004',
+    name: 'Physics',
+    code: 'PHY-SEC',
+    section: 'Secondary',
+    category: 'Sciences',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3', 'Grade 10', 'Grade 11'],
+    applicableClasses: [
+      'Grade 10 A', 'Grade 11 Science',
+      'SSS 1 Science', 'SSS 2 Science', 'SSS 3 Science'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Dr. Marcus Vance',
+    teacherId: 'tch-201',
+    description: 'Classical mechanics, optics, wave motion, electricity, thermodynamics, and modern physics practicals.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-005',
+    name: 'Chemistry',
+    code: 'CHM-SEC',
+    section: 'Secondary',
+    category: 'Sciences',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3', 'Grade 10', 'Grade 11'],
+    applicableClasses: [
+      'Grade 10 A', 'Grade 11 Science',
+      'SSS 1 Science', 'SSS 2 Science', 'SSS 3 Science'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'General, organic, physical, and qualitative/quantitative chemical laboratory analysis.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-006',
+    name: 'Biology',
+    code: 'BIO-SEC',
+    section: 'Secondary',
+    category: 'Sciences',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3', 'Grade 10', 'Grade 11', 'Grade 12'],
+    applicableClasses: [
+      'Grade 10 A', 'Grade 10 B', 'Grade 11 Science', 'Grade 12 Art',
+      'SSS 1 Science', 'SSS 2 Science', 'SSS 3 Science'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mrs. Victoria Nwosu',
+    teacherId: 'tch-202',
+    description: 'Physiology, genetics, ecology, morphology, and botanical/zoological investigations.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-007',
+    name: 'Further Mathematics',
+    code: 'FMTH-SEC',
+    section: 'Secondary',
+    category: 'Sciences',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3', 'Grade 11'],
+    applicableClasses: [
+      'Grade 11 Science', 'SSS 1 Science', 'SSS 2 Science', 'SSS 3 Science'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Dr. Marcus Vance',
+    teacherId: 'tch-201',
+    description: 'Advanced calculus, vector algebra, complex numbers, mechanics, and probability statistics.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-008',
+    name: 'Computer Studies / ICT',
+    code: 'ICT-SEC',
+    section: 'Secondary',
+    category: 'STEM & ICT',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3', 'SSS 1', 'SSS 2', 'SSS 3', 'Grade 10'],
+    applicableClasses: [
+      'Grade 10 A', 'Grade 10 B',
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B',
+      'SSS 1 Science', 'SSS 1 Commercial'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Dr. Marcus Vance',
+    teacherId: 'tch-201',
+    description: 'Data structures, algorithm design, digital literacy, networking fundamentals, and web concepts.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-009',
+    name: 'Economics',
+    code: 'ECO-SEC',
+    section: 'Secondary',
+    category: 'Commercial & Social Sciences',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3', 'Grade 11', 'Grade 12'],
+    applicableClasses: [
+      'Grade 11 Science', 'Grade 12 Art',
+      'SSS 1 Commercial', 'SSS 1 Arts',
+      'SSS 2 Commercial', 'SSS 2 Arts',
+      'SSS 3 Commercial', 'SSS 3 Arts'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'Microeconomics, macroeconomics, monetary systems, public finance, and international trade.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-010',
+    name: 'Literature in English',
+    code: 'LIT-SEC',
+    section: 'Secondary',
+    category: 'Arts & Humanities',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3', 'Grade 12'],
+    applicableClasses: [
+      'Grade 12 Art', 'SSS 1 Arts', 'SSS 2 Arts', 'SSS 3 Arts'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mrs. Victoria Nwosu',
+    teacherId: 'tch-202',
+    description: 'African & non-African prose, drama, poetry analysis, and literary critical appreciation.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-011',
+    name: 'Government',
+    code: 'GOV-SEC',
+    section: 'Secondary',
+    category: 'Arts & Humanities',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3', 'Grade 12'],
+    applicableClasses: [
+      'Grade 12 Art', 'SSS 1 Arts', 'SSS 2 Arts', 'SSS 3 Arts'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'Political institutions, Nigerian constitutional development, political philosophies, and foreign policy.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-012',
+    name: 'Financial Accounting',
+    code: 'ACC-SEC',
+    section: 'Secondary',
+    category: 'Commercial & Business',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3'],
+    applicableClasses: [
+      'SSS 1 Commercial', 'SSS 2 Commercial', 'SSS 3 Commercial'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'Double-entry bookkeeping, ledger reconciliation, company accounts, and financial statement reporting.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-013',
+    name: 'Commerce',
+    code: 'COM-SEC',
+    section: 'Secondary',
+    category: 'Commercial & Business',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3'],
+    applicableClasses: [
+      'SSS 1 Commercial', 'SSS 2 Commercial', 'SSS 3 Commercial'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'Wholesale, retail, banking services, insurance, transportation, and business advertising.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-014',
+    name: 'Agricultural Science',
+    code: 'AGR-SEC',
+    section: 'Secondary',
+    category: 'Technical & Vocational',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3', 'SSS 1', 'SSS 2'],
+    applicableClasses: [
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B',
+      'SSS 1 Science', 'SSS 2 Science'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Dr. Marcus Vance',
+    teacherId: 'tch-201',
+    description: 'Crop production, animal husbandry, soil science, farm mechanization, and agricultural economics.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-015',
+    name: 'Technical Drawing',
+    code: 'TD-SEC',
+    section: 'Secondary',
+    category: 'Technical & Engineering',
+    classLevels: ['SSS 1', 'SSS 2', 'SSS 3'],
+    applicableClasses: [
+      'SSS 1 Science', 'SSS 2 Science', 'SSS 3 Science'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Dr. Marcus Vance',
+    teacherId: 'tch-201',
+    description: 'Isometric and orthographic projections, geometrical constructions, and architectural drafts.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-016',
+    name: 'Basic Science & Technology',
+    code: 'BST-JSS',
+    section: 'Secondary',
+    category: 'Junior Secondary Core',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3'],
+    applicableClasses: [
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'Integrated introductory science, basic technology concepts, and foundational technical workshops for BECE.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-017',
+    name: 'Business Studies',
+    code: 'BUS-JSS',
+    section: 'Secondary',
+    category: 'Junior Secondary Commercial',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3'],
+    applicableClasses: [
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Mr. Gabriel Thorne',
+    teacherId: 'tch-203',
+    description: 'Introductory bookkeeping, office practices, keyboarding skills, and entrepreneurial habits.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-sec-018',
+    name: 'French Language',
+    code: 'FRN-SEC',
+    section: 'Secondary',
+    category: 'Modern Languages',
+    classLevels: ['JSS 1', 'JSS 2', 'JSS 3', 'SSS 1'],
+    applicableClasses: [
+      'JSS 1 A', 'JSS 1 B', 'JSS 2 A', 'JSS 2 B', 'JSS 3 A', 'JSS 3 B'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mrs. Victoria Nwosu',
+    teacherId: 'tch-202',
+    description: 'Grammaire, vocabulaire, expression orale et écrite, et civilisation francophone.',
+    status: 'Active'
+  },
+
+  // ==========================================
+  // PRIMARY & EARLY YEARS SUBJECTS (Head Teacher)
+  // ==========================================
+  {
+    id: 'sub-pri-101',
+    name: 'Literacy & English Studies',
+    code: 'LIT-PRI',
+    section: 'Primary',
+    category: 'Language Arts & Phonics',
+    classLevels: ['Nursery 1', 'Nursery 2', 'Kindergarten', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Nursery 1', 'Nursery 2', 'Kindergarten',
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 5,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Foundational English reading, guided comprehension, vocabulary building, grammar, and essay writing.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-102',
+    name: 'Numeracy & Mathematics',
+    code: 'NUM-PRI',
+    section: 'Primary',
+    category: 'Mathematics & Numeracy',
+    classLevels: ['Nursery 1', 'Nursery 2', 'Kindergarten', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Nursery 1', 'Nursery 2', 'Kindergarten',
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 5,
+    passMark: 50,
+    teacherName: 'Mr. Samuel Adeleke',
+    teacherId: 'tch-205',
+    description: 'Number work, place value, operations, fractions, shapes, measurement, and elementary problem solving.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-103',
+    name: 'Phonics, Diction & Spelling',
+    code: 'PHN-PRI',
+    section: 'Primary',
+    category: 'Language Arts & Phonics',
+    classLevels: ['Nursery 1', 'Nursery 2', 'Kindergarten', 'Basic 1', 'Basic 2', 'Basic 3'],
+    applicableClasses: [
+      'Nursery 1', 'Nursery 2', 'Kindergarten',
+      'Basic 1', 'Basic 2', 'Basic 3'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Jolly Phonics letter blends, vowel digraphs, phonetic transcription, elocution, and spelling bees.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-104',
+    name: 'Basic Science & Technology',
+    code: 'BST-PRI',
+    section: 'Primary',
+    category: 'Science & Discovery',
+    classLevels: ['Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mr. Samuel Adeleke',
+    teacherId: 'tch-205',
+    description: 'Living and non-living things, plants, animals, weather, simple machines, and technology explorations.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-105',
+    name: 'Social Studies & Civic Habits',
+    code: 'SOS-PRI',
+    section: 'Primary',
+    category: 'Social Sciences & Citizenship',
+    classLevels: ['Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Family life, cultural heritage, national symbols, road safety, and civic moral habits.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-106',
+    name: 'Quantitative Reasoning',
+    code: 'QR-PRI',
+    section: 'Primary',
+    category: 'Aptitude & Reasoning',
+    classLevels: ['Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Mr. Samuel Adeleke',
+    teacherId: 'tch-205',
+    description: 'Numerical patterns, logic puzzles, spatial math thinking, and Common Entrance aptitude training.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-107',
+    name: 'Verbal Reasoning',
+    code: 'VR-PRI',
+    section: 'Primary',
+    category: 'Aptitude & Reasoning',
+    classLevels: ['Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 3,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Word codes, anagrams, antonyms/synonyms, analogy sequences, and critical English verbal aptitude.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-108',
+    name: 'Creative & Cultural Arts (CCA)',
+    code: 'CCA-PRI',
+    section: 'Primary',
+    category: 'Creative & Expressive Arts',
+    classLevels: ['Nursery 1', 'Nursery 2', 'Kindergarten', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Nursery 1', 'Nursery 2', 'Kindergarten',
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Color theory, sketching, local handicrafts, music rhythm, and cultural drama performance.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-109',
+    name: 'Physical & Health Education (PHE)',
+    code: 'PHE-PRI',
+    section: 'Primary',
+    category: 'Physical & Health Education',
+    classLevels: ['Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mr. Samuel Adeleke',
+    teacherId: 'tch-205',
+    description: 'Athletics, calisthenics, team sportsmanship, personal hygiene, and clean environmental health habits.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-110',
+    name: 'ICT / Computer Fundamentals',
+    code: 'ICT-PRI',
+    section: 'Primary',
+    category: 'Technology & Digital Skills',
+    classLevels: ['Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mr. Samuel Adeleke',
+    teacherId: 'tch-205',
+    description: 'Computer parts, mouse control, keyboarding, kid-friendly drawing apps, and digital safety habits.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-111',
+    name: 'Christian / Islamic Religious Knowledge',
+    code: 'CRK-PRI',
+    section: 'Primary',
+    category: 'Moral & Religious Studies',
+    classLevels: ['Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Moral values, spiritual teachings, respect for elders, honesty, and peaceful communal coexistence.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-112',
+    name: 'Handwriting & Penmanship',
+    code: 'HW-PRI',
+    section: 'Primary',
+    category: 'Language Arts & Phonics',
+    classLevels: ['Nursery 1', 'Nursery 2', 'Kindergarten', 'Basic 1', 'Basic 2'],
+    applicableClasses: [
+      'Nursery 1', 'Nursery 2', 'Kindergarten', 'Basic 1', 'Basic 2'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Fine motor control, cursive lettering, neat margins, pencil grip, and penmanship alignment.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-113',
+    name: 'Sensory Exploration & Nursery Rhymes',
+    code: 'SNY-EY',
+    section: 'Primary',
+    category: 'Early Years & Sensory Play',
+    classLevels: ['Nursery 1', 'Nursery 2', 'Kindergarten'],
+    applicableClasses: [
+      'Nursery 1', 'Nursery 2', 'Kindergarten'
+    ],
+    isCompulsory: true,
+    weeklyPeriods: 4,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Tactile sensory play, musical sing-alongs, nursery rhymes, motor coordination, and color recognition.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-114',
+    name: 'French for Beginners',
+    code: 'FRN-PRI',
+    section: 'Primary',
+    category: 'Languages & Communication',
+    classLevels: ['Basic 3', 'Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 3', 'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mrs. Folashade Adeleke',
+    teacherId: 'tch-204',
+    description: 'Salutations simples, chiffres, couleurs, chansons françaises et vocabulaire quotidien pour enfants.',
+    status: 'Active'
+  },
+  {
+    id: 'sub-pri-115',
+    name: 'Pre-Vocational Studies & Handcrafts',
+    code: 'VOC-PRI',
+    section: 'Primary',
+    category: 'Vocational Aptitude',
+    classLevels: ['Basic 4', 'Basic 5'],
+    applicableClasses: [
+      'Basic 4', 'Basic 5'
+    ],
+    isCompulsory: false,
+    weeklyPeriods: 2,
+    passMark: 50,
+    teacherName: 'Mr. Samuel Adeleke',
+    teacherId: 'tch-205',
+    description: 'Introductory domestic skills, simple agriculture, sewing basics, and practical workshop aptitude.',
+    status: 'Active'
+  }
+];
 
 

@@ -1,4 +1,4 @@
-import { UserRole, SchoolSettings } from '../types';
+import { UserRole, SchoolSettings, SchoolSubject } from '../types';
 import { DEFAULT_SCHOOL_LOGO_DATA_URI, DEFAULT_SCHOOL_STAMP_DATA_URI } from '../assets/schoolAssets';
 
 export const SECONDARY_CLASSES = [
@@ -223,8 +223,8 @@ export function getSchoolContactDetails(settings?: Partial<SchoolSettings>) {
 }
 
 export function getAcademicSessionAndTerm(settings?: Partial<SchoolSettings>) {
-  const academicSession = settings?.academicSession || '2025/2026 Academic Session';
-  const currentTerm = settings?.currentTerm || '2nd Term';
+  const academicSession = settings?.academicSession || '2026/2027 Academic Session';
+  const currentTerm = settings?.currentTerm || '1st Term';
   return {
     academicSession,
     currentTerm,
@@ -240,3 +240,27 @@ export function getSchoolLogo(settings?: Partial<SchoolSettings>): string {
 export function getSchoolStamp(settings?: Partial<SchoolSettings>): string {
   return settings?.stampUrl || DEFAULT_SCHOOL_STAMP_DATA_URI;
 }
+
+export function filterSubjectsByRole(subjects: SchoolSubject[], role: UserRole): SchoolSubject[] {
+  if (role === 'principal') {
+    return subjects.filter((s) => s.section === 'Secondary');
+  }
+  if (role === 'head_teacher') {
+    return subjects.filter((s) => s.section === 'Primary');
+  }
+  return subjects;
+}
+
+export function getSubjectsForClass(subjects: SchoolSubject[], className: string): SchoolSubject[] {
+  if (!className) return [];
+  const normalizedClass = className.trim();
+  return subjects.filter((s) => {
+    return s.applicableClasses.some((c) => {
+      if (c === normalizedClass) return true;
+      // Match general level (e.g. "JSS 1" for "JSS 1 A", "Basic 1" for "Basic 1 Gold")
+      if (normalizedClass.startsWith(c)) return true;
+      return false;
+    });
+  });
+}
+

@@ -393,22 +393,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   key={std.id}
                   className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition group"
                 >
-                  {/* Avatar & Name */}
+                  {/* Name & Admission */}
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={std.avatar}
-                        alt={std.firstName}
-                        className="h-9 w-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
-                      />
-                      <div>
-                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                          {std.firstName} {std.lastName}
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {std.admissionNo}
-                        </span>
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        {std.firstName} {std.lastName}
                       </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {std.admissionNo}
+                      </span>
                     </div>
                   </td>
 
@@ -520,27 +513,20 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden p-6 space-y-6 max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-4">
-                <img
-                  src={selectedStudent.avatar}
-                  alt={selectedStudent.firstName}
-                  className="h-16 w-16 rounded-full object-cover border-2 border-emerald-500 shadow-md"
-                />
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                    {selectedStudent.firstName} {selectedStudent.lastName}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    Admission No: {selectedStudent.admissionNo} • Class: {selectedStudent.classGroup}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 dark:bg-emerald-950 text-[10px] font-bold">
-                      {selectedStudent.status} Status
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 dark:bg-indigo-950 text-[10px] font-bold">
-                      GPA: {selectedStudent.gpa}
-                    </span>
-                  </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                  {selectedStudent.firstName} {selectedStudent.lastName}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                  Admission No: {selectedStudent.admissionNo} • Class: {selectedStudent.classGroup}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 dark:bg-emerald-950 text-[10px] font-bold">
+                    {selectedStudent.status} Status
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 dark:bg-indigo-950 text-[10px] font-bold">
+                    GPA: {selectedStudent.gpa}
+                  </span>
                 </div>
               </div>
               <button

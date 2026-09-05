@@ -70,10 +70,10 @@ export const SchoolSettingsView: React.FC<SchoolSettingsViewProps> = ({
     settings?.motto || 'Excellence in Knowledge, Innovation & Character'
   );
   const [academicSession, setAcademicSession] = useState(
-    settings?.academicSession || '2025/2026 Academic Session'
+    settings?.academicSession || '2026/2027 Academic Session'
   );
   const [currentTerm, setCurrentTerm] = useState(
-    settings?.currentTerm || '2nd Term'
+    settings?.currentTerm || '1st Term'
   );
   const [principalName, setPrincipalName] = useState(
     settings?.principalName || 'Dr. Elizabeth Sterling'
@@ -682,9 +682,9 @@ export const SchoolSettingsView: React.FC<SchoolSettingsViewProps> = ({
               <DropdownWithSearch
                 disabled={!canManageSetup}
                 options={[
-                  { value: '1st Term', label: '1st Term', sublabel: 'Autumn / Michaelmas', badge: '1st Term' },
-                  { value: '2nd Term', label: '2nd Term', sublabel: 'Spring / Lent (Current)', badge: '2nd Term' },
-                  { value: '3rd Term', label: '3rd Term', sublabel: 'Summer / Trinity', badge: '3rd Term' }
+                  { value: '1st Term', label: '1st Term', sublabel: `Autumn / Michaelmas${currentTerm === '1st Term' ? ' (Active)' : ''}`, badge: '1st Term' },
+                  { value: '2nd Term', label: '2nd Term', sublabel: `Spring / Lent${currentTerm === '2nd Term' ? ' (Active)' : ''}`, badge: '2nd Term' },
+                  { value: '3rd Term', label: '3rd Term', sublabel: `Summer / Trinity${currentTerm === '3rd Term' ? ' (Active)' : ''}`, badge: '3rd Term' }
                 ]}
                 value={currentTerm}
                 onChange={(val) => setCurrentTerm(val)}

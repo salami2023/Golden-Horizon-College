@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import {
   Student,
   Teacher,
+  SchoolClass,
+  SchoolSubject,
   Invoice,
   PaymentTransaction,
   StudentReportCard,
@@ -20,6 +22,8 @@ import {
 import {
   INITIAL_STUDENTS,
   INITIAL_TEACHERS,
+  INITIAL_CLASSES,
+  INITIAL_SUBJECTS,
   INITIAL_INVOICES,
   INITIAL_TRANSACTIONS,
   INITIAL_REPORT_CARDS,
@@ -56,6 +60,8 @@ interface RealTimeContextType {
   dismissNotification: (id: string) => void;
 
   // Authoritative State
+  classes: SchoolClass[];
+  subjects: SchoolSubject[];
   students: Student[];
   teachers: Teacher[];
   invoices: Invoice[];
@@ -72,6 +78,29 @@ interface RealTimeContextType {
   themeConfig: SchoolThemeConfig;
 
   // Mutators
+  addClass: (cls: SchoolClass, actor?: SyncActor) => Promise<void>;
+  updateClass: (cls: SchoolClass, actor?: SyncActor) => Promise<void>;
+  deleteClass: (classId: string, actor?: SyncActor) => Promise<void>;
+  assignClassTeacher: (classId: string, teacherId: string, teacherName: string, className: string, actor?: SyncActor) => Promise<void>;
+  removeClassTeacher: (classId: string, teacherId: string | undefined, className: string, actor?: SyncActor) => Promise<void>;
+  
+  // Subject Curriculum Mutators (Principal for Secondary, Head Teacher for Primary)
+  addSubject: (subject: SchoolSubject, actor?: SyncActor) => Promise<void>;
+  updateSubject: (subject: SchoolSubject, actor?: SyncActor) => Promise<void>;
+  deleteSubject: (subjectId: string, actor?: SyncActor) => Promise<void>;
+  assignSubjectToClass: (subjectId: string, className: string, isCompulsory?: boolean, actor?: SyncActor) => Promise<void>;
+  removeSubjectFromClass: (subjectId: string, className: string, actor?: SyncActor) => Promise<void>;
+  bulkAssignSubjectsToClass: (subjectIds: string[], className: string, actor?: SyncActor) => Promise<void>;
+  bulkRemoveSubjectsFromClass: (subjectIds: string[], className: string, actor?: SyncActor) => Promise<void>;
+  duplicateCurriculum: (sourceClassName: string, targetClassName: string, actor?: SyncActor) => Promise<void>;
+
+  promoteStudent: (studentId: string, targetClass: string, previousClass: string, studentName?: string, actor?: SyncActor) => Promise<void>;
+  demoteStudent: (studentId: string, targetClass: string, previousClass: string, studentName?: string, actor?: SyncActor) => Promise<void>;
+  archiveStudent: (studentId: string, studentName?: string, status?: 'Graduated' | 'Suspended', actor?: SyncActor) => Promise<void>;
+  bulkPromoteStudents: (studentIds: string[], targetClass: string, actor?: SyncActor) => Promise<void>;
+  bulkDemoteStudents: (studentIds: string[], targetClass: string, actor?: SyncActor) => Promise<void>;
+  bulkArchiveStudents: (studentIds: string[], status?: 'Graduated' | 'Suspended', actor?: SyncActor) => Promise<void>;
+  reactivateStudent: (studentId: string, studentName?: string, actor?: SyncActor) => Promise<void>;
   addStudent: (student: Student, actor?: SyncActor) => Promise<void>;
   updateStudent: (student: Student, actor?: SyncActor) => Promise<void>;
   deleteStudent: (studentId: string, actor?: SyncActor) => Promise<void>;
@@ -161,6 +190,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const cachedSnapshot = useRef<any>(readLocalDatabaseSnapshot()).current;
 
   // State initialized from local database snapshot first to prevent wiping across hot-reloads and feature updates
+  const [classes, setClasses] = useState<SchoolClass[]>(() => cachedSnapshot?.classes || INITIAL_CLASSES);
+  const [subjects, setSubjects] = useState<SchoolSubject[]>(() => cachedSnapshot?.subjects || INITIAL_SUBJECTS);
   const [students, setStudents] = useState<Student[]>(() => cachedSnapshot?.students || INITIAL_STUDENTS);
   const [teachers, setTeachers] = useState<Teacher[]>(() => cachedSnapshot?.teachers || INITIAL_TEACHERS);
   const [invoices, setInvoices] = useState<Invoice[]>(() => cachedSnapshot?.invoices || INITIAL_INVOICES);
@@ -210,6 +241,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     try {
       localStorage.setItem(CLIENT_DB_STORAGE_KEY, JSON.stringify({
+        classes,
+        subjects,
         students,
         teachers,
         invoices,
@@ -229,6 +262,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('Failed writing localStorage database snapshot:', err);
     }
   }, [
+    classes,
+    subjects,
     students,
     teachers,
     invoices,
@@ -251,17 +286,20 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const local = readLocalDatabaseSnapshot();
     if (!local) return;
 
+    const hasNewClasses = Array.isArray(local.classes) && local.classes.length > (serverState.classes?.length || 0);
     const hasNewStudents = Array.isArray(local.students) && local.students.length > (serverState.students?.length || 0);
     const hasNewTeachers = Array.isArray(local.teachers) && local.teachers.length > (serverState.teachers?.length || 0);
     const hasNewInvoices = Array.isArray(local.invoices) && local.invoices.length > (serverState.invoices?.length || 0);
     const hasNewTransactions = Array.isArray(local.transactions) && local.transactions.length > (serverState.transactions?.length || 0);
 
-    if (hasNewStudents || hasNewTeachers || hasNewInvoices || hasNewTransactions) {
+    if (hasNewClasses || hasNewStudents || hasNewTeachers || hasNewInvoices || hasNewTransactions) {
       try {
+        // Exclude schoolSettings so stale client snapshots cannot revert server-authoritative term/session
+        const { schoolSettings: _ignoreSettings, ...localWithoutSettings } = local;
         await fetch('/api/sync/hydrate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ state: local })
+          body: JSON.stringify({ state: localWithoutSettings })
         });
       } catch (err) {
         console.warn('Background state hydration error:', err);
@@ -298,6 +336,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (res.ok) {
         const data = await res.json();
         if (data.state) {
+          if (data.state.classes) setClasses(data.state.classes);
+          if (data.state.subjects) setSubjects(data.state.subjects);
           if (data.state.students) setStudents(data.state.students);
           if (data.state.teachers) setTeachers(data.state.teachers);
           if (data.state.invoices) setInvoices(data.state.invoices);
@@ -361,6 +401,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (msg.type === 'INIT_STATE') {
               const s = msg.state;
               if (s) {
+                if (s.classes) setClasses(s.classes);
+                if (s.subjects) setSubjects(s.subjects);
                 if (s.students) setStudents(s.students);
                 if (s.teachers) setTeachers(s.teachers);
                 if (s.invoices) setInvoices(s.invoices);
@@ -384,6 +426,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const { entity, action, data, auditLog, fullState, actor } = msg;
 
               if (fullState) {
+                if (fullState.classes) setClasses(fullState.classes);
+                if (fullState.subjects) setSubjects(fullState.subjects);
                 if (fullState.students) setStudents(fullState.students);
                 if (fullState.teachers) setTeachers(fullState.teachers);
                 if (fullState.invoices) setInvoices(fullState.invoices);
@@ -489,6 +533,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (res.ok) {
           const resData = await res.json();
           if (resData.state) {
+            if (resData.state.classes) setClasses(resData.state.classes);
+            if (resData.state.subjects) setSubjects(resData.state.subjects);
             if (resData.state.students) setStudents(resData.state.students);
             if (resData.state.teachers) setTeachers(resData.state.teachers);
             if (resData.state.invoices) setInvoices(resData.state.invoices);
@@ -513,6 +559,141 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [currentRole, dedupeAuditLogs]);
 
   // Concrete mutators
+  const addClass = useCallback(async (cls: SchoolClass, actor?: SyncActor) => {
+    setClasses((prev) => [cls, ...prev]);
+    await sendMutation('class', 'create', cls, actor);
+  }, [sendMutation]);
+
+  const updateClass = useCallback(async (cls: SchoolClass, actor?: SyncActor) => {
+    setClasses((prev) => prev.map((c) => (c.id === cls.id ? cls : c)));
+    await sendMutation('class', 'update', cls, actor);
+  }, [sendMutation]);
+
+  const deleteClass = useCallback(async (classId: string, actor?: SyncActor) => {
+    setClasses((prev) => prev.filter((c) => c.id !== classId));
+    await sendMutation('class', 'delete', { id: classId }, actor);
+  }, [sendMutation]);
+
+  const assignClassTeacher = useCallback(async (classId: string, teacherId: string, teacherName: string, className: string, actor?: SyncActor) => {
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, classTeacherId: teacherId, classTeacherName: teacherName } : c)));
+    setTeachers((prev) => prev.map((t) => (t.id === teacherId ? { ...t, formClass: className } : t)));
+    await sendMutation('class', 'assign_teacher', { classId, teacherId, teacherName, className }, actor);
+  }, [sendMutation]);
+
+  const removeClassTeacher = useCallback(async (classId: string, teacherId: string | undefined, className: string, actor?: SyncActor) => {
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, classTeacherId: undefined, classTeacherName: undefined } : c)));
+    if (teacherId) {
+      setTeachers((prev) => prev.map((t) => (t.id === teacherId ? { ...t, formClass: undefined } : t)));
+    } else {
+      setTeachers((prev) => prev.map((t) => (t.formClass === className ? { ...t, formClass: undefined } : t)));
+    }
+    await sendMutation('class', 'remove_teacher', { classId, teacherId, className }, actor);
+  }, [sendMutation]);
+
+  // Subject Curriculum Mutators (Principal for Secondary, Head Teacher for Primary)
+  const addSubject = useCallback(async (subject: SchoolSubject, actor?: SyncActor) => {
+    setSubjects((prev) => [subject, ...prev.filter((s) => s.id !== subject.id)]);
+    await sendMutation('subject', 'create', subject, actor);
+  }, [sendMutation]);
+
+  const updateSubject = useCallback(async (subject: SchoolSubject, actor?: SyncActor) => {
+    setSubjects((prev) => prev.map((s) => (s.id === subject.id ? subject : s)));
+    await sendMutation('subject', 'update', subject, actor);
+  }, [sendMutation]);
+
+  const deleteSubject = useCallback(async (subjectId: string, actor?: SyncActor) => {
+    setSubjects((prev) => prev.filter((s) => s.id !== subjectId));
+    await sendMutation('subject', 'delete', { id: subjectId }, actor);
+  }, [sendMutation]);
+
+  const assignSubjectToClass = useCallback(async (subjectId: string, className: string, isCompulsory = false, actor?: SyncActor) => {
+    setSubjects((prev) => prev.map((s) => {
+      if (s.id === subjectId) {
+        const classes = s.applicableClasses.includes(className) ? s.applicableClasses : [...s.applicableClasses, className];
+        return { ...s, applicableClasses: classes };
+      }
+      return s;
+    }));
+    await sendMutation('subject', 'assign_to_class', { subjectId, className, isCompulsory }, actor);
+  }, [sendMutation]);
+
+  const removeSubjectFromClass = useCallback(async (subjectId: string, className: string, actor?: SyncActor) => {
+    setSubjects((prev) => prev.map((s) => {
+      if (s.id === subjectId) {
+        return { ...s, applicableClasses: s.applicableClasses.filter((c) => c !== className) };
+      }
+      return s;
+    }));
+    await sendMutation('subject', 'remove_from_class', { subjectId, className }, actor);
+  }, [sendMutation]);
+
+  const bulkAssignSubjectsToClass = useCallback(async (subjectIds: string[], className: string, actor?: SyncActor) => {
+    setSubjects((prev) => prev.map((s) => {
+      if (subjectIds.includes(s.id)) {
+        const classes = s.applicableClasses.includes(className) ? s.applicableClasses : [...s.applicableClasses, className];
+        return { ...s, applicableClasses: classes };
+      }
+      return s;
+    }));
+    await sendMutation('subject', 'bulk_assign_to_class', { subjectIds, className }, actor);
+  }, [sendMutation]);
+
+  const bulkRemoveSubjectsFromClass = useCallback(async (subjectIds: string[], className: string, actor?: SyncActor) => {
+    setSubjects((prev) => prev.map((s) => {
+      if (subjectIds.includes(s.id)) {
+        return { ...s, applicableClasses: s.applicableClasses.filter((c) => c !== className) };
+      }
+      return s;
+    }));
+    await sendMutation('subject', 'bulk_remove_from_class', { subjectIds, className }, actor);
+  }, [sendMutation]);
+
+  const duplicateCurriculum = useCallback(async (sourceClassName: string, targetClassName: string, actor?: SyncActor) => {
+    setSubjects((prev) => prev.map((s) => {
+      if (s.applicableClasses.includes(sourceClassName)) {
+        const classes = s.applicableClasses.includes(targetClassName) ? s.applicableClasses : [...s.applicableClasses, targetClassName];
+        return { ...s, applicableClasses: classes };
+      }
+      return s;
+    }));
+    await sendMutation('subject', 'duplicate_curriculum', { sourceClassName, targetClassName }, actor);
+  }, [sendMutation]);
+
+  const promoteStudent = useCallback(async (studentId: string, targetClass: string, previousClass: string, studentName?: string, actor?: SyncActor) => {
+    setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, classGroup: targetClass } : s)));
+    await sendMutation('student', 'promote_demote', { studentId, targetClass, previousClass, isPromotion: true, studentName }, actor);
+  }, [sendMutation]);
+
+  const demoteStudent = useCallback(async (studentId: string, targetClass: string, previousClass: string, studentName?: string, actor?: SyncActor) => {
+    setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, classGroup: targetClass } : s)));
+    await sendMutation('student', 'promote_demote', { studentId, targetClass, previousClass, isPromotion: false, studentName }, actor);
+  }, [sendMutation]);
+
+  const archiveStudent = useCallback(async (studentId: string, studentName?: string, status: 'Graduated' | 'Suspended' = 'Graduated', actor?: SyncActor) => {
+    setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, status } : s)));
+    await sendMutation('student', 'archive', { studentId, studentName, status }, actor);
+  }, [sendMutation]);
+
+  const bulkPromoteStudents = useCallback(async (studentIds: string[], targetClass: string, actor?: SyncActor) => {
+    setStudents((prev) => prev.map((s) => (studentIds.includes(s.id) ? { ...s, classGroup: targetClass } : s)));
+    await sendMutation('student', 'bulk_promote_demote', { studentIds, targetClass, isPromotion: true }, actor);
+  }, [sendMutation]);
+
+  const bulkDemoteStudents = useCallback(async (studentIds: string[], targetClass: string, actor?: SyncActor) => {
+    setStudents((prev) => prev.map((s) => (studentIds.includes(s.id) ? { ...s, classGroup: targetClass } : s)));
+    await sendMutation('student', 'bulk_promote_demote', { studentIds, targetClass, isPromotion: false }, actor);
+  }, [sendMutation]);
+
+  const bulkArchiveStudents = useCallback(async (studentIds: string[], status: 'Graduated' | 'Suspended' = 'Graduated', actor?: SyncActor) => {
+    setStudents((prev) => prev.map((s) => (studentIds.includes(s.id) ? { ...s, status } : s)));
+    await sendMutation('student', 'bulk_archive', { studentIds, status }, actor);
+  }, [sendMutation]);
+
+  const reactivateStudent = useCallback(async (studentId: string, studentName?: string, actor?: SyncActor) => {
+    setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, status: 'Active' } : s)));
+    await sendMutation('student', 'reactivate', { studentId, studentName }, actor);
+  }, [sendMutation]);
+
   const addStudent = useCallback(async (std: Student, actor?: SyncActor) => {
     setStudents((prev) => [std, ...prev]);
     await sendMutation('student', 'create', std, actor);
@@ -745,6 +926,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         auditLogs,
         notifications,
         dismissNotification,
+        classes,
+        subjects,
         students,
         teachers,
         invoices,
@@ -759,6 +942,26 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         attendance,
         schoolSettings,
         themeConfig,
+        addClass,
+        updateClass,
+        deleteClass,
+        assignClassTeacher,
+        removeClassTeacher,
+        addSubject,
+        updateSubject,
+        deleteSubject,
+        assignSubjectToClass,
+        removeSubjectFromClass,
+        bulkAssignSubjectsToClass,
+        bulkRemoveSubjectsFromClass,
+        duplicateCurriculum,
+        promoteStudent,
+        demoteStudent,
+        archiveStudent,
+        bulkPromoteStudents,
+        bulkDemoteStudents,
+        bulkArchiveStudents,
+        reactivateStudent,
         addStudent,
         updateStudent,
         deleteStudent,

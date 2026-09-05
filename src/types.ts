@@ -274,7 +274,44 @@ export interface RealTimeAuditEvent {
   details: string;
 }
 
+export interface SchoolClass {
+  id: string;
+  name: string; // e.g. "Grade 10 A" or "Basic 3"
+  section: 'Secondary' | 'Primary';
+  level: string; // e.g. "Grade 10", "JSS 1", "Basic 3", "Nursery 1"
+  arm: string; // e.g. "A", "B", "Science", "Diamond"
+  category?: 'Senior Secondary' | 'Junior Secondary' | 'Primary' | 'Early Years';
+  classTeacherId?: string;
+  classTeacherName?: string;
+  capacity: number;
+  room?: string;
+  status: 'Active' | 'Archived';
+  description?: string;
+  academicSession?: string;
+}
+
+export interface SchoolSubject {
+  id: string;
+  name: string;
+  code: string;
+  section: 'Secondary' | 'Primary';
+  category: string;
+  classLevels?: string[];
+  applicableClasses: string[];
+  isCompulsory: boolean;
+  weeklyPeriods: number;
+  passMark?: number;
+  teacherName?: string;
+  teacherId?: string;
+  description?: string;
+  status?: 'Active' | 'Inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface RealTimeSyncState {
+  classes: SchoolClass[];
+  subjects: SchoolSubject[];
   students: Student[];
   teachers: Teacher[];
   invoices: Invoice[];

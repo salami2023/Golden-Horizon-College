@@ -6,6 +6,7 @@ import {
   CreditCard,
   Laptop,
   GraduationCap,
+  School,
   Sparkles,
   Calendar,
   AlertCircle,
@@ -66,8 +67,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const { schoolSettings: contextSchoolSettings } = useRealTime();
   const schoolSettings = propSchoolSettings || contextSchoolSettings;
 
-  const activeSession = schoolSettings?.academicSession || '2025/2026 Academic Session';
-  const activeTerm = schoolSettings?.currentTerm || '2nd Term';
+  const activeSession = schoolSettings?.academicSession || '2026/2027 Academic Session';
+  const activeTerm = schoolSettings?.currentTerm || '1st Term';
   const activeSchoolName = currentRole === 'principal'
     ? (schoolSettings?.secondarySchoolName || SECONDARY_SCHOOL_NAME)
     : currentRole === 'head_teacher'
@@ -232,6 +233,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           
           <div className="flex items-center gap-2 shrink-0">
+            {['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole) && (
+              <button
+                onClick={() => onNavigate('classes')}
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <School className="h-4 w-4" />
+                Classes & Pupils
+              </button>
+            )}
             <button
               onClick={() => onNavigate('academics')}
               className="px-4 py-2 rounded-lg bg-white text-slate-900 font-semibold text-xs shadow-sm hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer"

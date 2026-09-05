@@ -167,8 +167,7 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
               value: std.id,
               label: `${std.firstName} ${std.lastName}`,
               sublabel: `${std.admissionNo} • ${std.classGroup}`,
-              badge: std.classGroup,
-              avatar: std.avatar
+              badge: std.classGroup
             }))}
             value={selectedStudentId}
             onChange={(val) => {
@@ -191,30 +190,23 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
             
             {/* Student Info Card */}
             <div className="md:col-span-2 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                <img
-                  src={activeStudent.avatar}
-                  alt={activeStudent.firstName}
-                  className="h-20 w-20 rounded-2xl object-cover border-2 border-indigo-500 shadow-md"
-                />
-                <div>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                    {activeStudent.firstName} {activeStudent.lastName}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    Admission No: <strong>{activeStudent.admissionNo}</strong> • Class: <strong>{activeStudent.classGroup}</strong>
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-xs">
-                      {activeStudent.attendanceRate}% Attendance
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-bold text-xs">
-                      Cumulative GPA: {activeStudent.gpa}
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 dark:bg-purple-950 dark:text-purple-300 font-bold text-xs">
-                      {activeStudent.gender}
-                    </span>
-                  </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                  {activeStudent.firstName} {activeStudent.lastName}
+                </h3>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  Admission No: <strong>{activeStudent.admissionNo}</strong> • Class: <strong>{activeStudent.classGroup}</strong>
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-xs">
+                    {activeStudent.attendanceRate}% Attendance
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-bold text-xs">
+                    Cumulative GPA: {activeStudent.gpa}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 dark:bg-purple-950 dark:text-purple-300 font-bold text-xs">
+                    {activeStudent.gender}
+                  </span>
                 </div>
               </div>
 

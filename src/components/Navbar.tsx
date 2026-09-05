@@ -78,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <p className="hidden md:flex items-center gap-1.5 text-[8.5px] text-slate-500 dark:text-slate-400 font-medium">
                 <Calendar className="h-3 w-3 text-blue-600 shrink-0" />
-                <span>{schoolSettings?.academicSession || '2025/2026 Academic Session'} • {schoolSettings?.currentTerm || '2nd Term'}</span>
+                <span>{schoolSettings?.academicSession || '2026/2027 Academic Session'} • {schoolSettings?.currentTerm || '1st Term'}</span>
               </p>
             </div>
           </div>
