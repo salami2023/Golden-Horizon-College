@@ -22,7 +22,15 @@ interface AuthContextType {
   deleteTeacherAccount: (teacherIdOrEmail: string) => void;
   syncTeachersWithUsers: (teachers: Teacher[]) => void;
   addAdminUser: (admin: { name: string; email: string; phone?: string; temporaryPassword?: string }) => { success: boolean; message: string; user?: UserAccount };
+  addLeadershipUser: (leader: {
+    name: string;
+    email: string;
+    phone?: string;
+    role: 'super_admin' | 'principal' | 'head_teacher' | 'finance';
+    temporaryPassword?: string;
+  }) => { success: boolean; message: string; user?: UserAccount };
   removeAdminUser: (userIdOrEmail: string) => { success: boolean; message: string };
+  deleteLeadershipUser: (userIdOrEmail: string) => { success: boolean; message: string };
   updateAdminUser: (userId: string, updates: Partial<UserAccount>) => { success: boolean; message: string };
   isPasswordSetupOpen: boolean;
   setIsPasswordSetupOpen: (open: boolean) => void;
@@ -464,80 +472,129 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  // Add new administrator account (by Pioneer in Pioneer Portal)
-  const addAdminUser = useCallback(
-    (admin: { name: string; email: string; phone?: string; temporaryPassword?: string }): { success: boolean; message: string; user?: UserAccount } => {
-      const cleanEmail = (admin.email || '').trim().toLowerCase();
+  // Add or update leadership/administrative account (Pioneer in Pioneer Portal)
+  const addLeadershipUser = useCallback(
+    (leader: {
+      name: string;
+      email: string;
+      phone?: string;
+      role: 'super_admin' | 'principal' | 'head_teacher' | 'finance';
+      temporaryPassword?: string;
+    }): { success: boolean; message: string; user?: UserAccount } => {
+      const cleanEmail = (leader.email || '').trim().toLowerCase();
       if (!cleanEmail || !cleanEmail.includes('@')) {
         return { success: false, message: 'Please provide a valid official email address.' };
       }
-      if (!admin.name || !admin.name.trim()) {
-        return { success: false, message: 'Please enter the administrator full name.' };
+      if (!leader.name || !leader.name.trim()) {
+        return { success: false, message: 'Please enter the official full name.' };
       }
+
+      const roleLabels: Record<string, string> = {
+        super_admin: 'School Administrator',
+        principal: 'School Principal',
+        head_teacher: 'Head Teacher',
+        finance: 'Bursar / Finance Officer'
+      };
+      const roleName = roleLabels[leader.role] || leader.role;
 
       const existingIndex = users.findIndex((u) => u.email.toLowerCase() === cleanEmail);
       if (existingIndex >= 0) {
         const existing = users[existingIndex];
-        if (existing.role === 'super_admin' || existing.role === 'pioneer') {
+        if (existing.role === 'pioneer') {
           return {
             success: false,
-            message: `An administrator account with email "${cleanEmail}" already exists.`
+            message: 'The Pioneer (Master Authority) account cannot be reassigned.'
           };
         }
-        // Upgrade existing user to super_admin
-        const updatedAdmin: UserAccount = {
+        // Update existing user with the new leadership role and information
+        const updatedLeader: UserAccount = {
           ...existing,
-          name: admin.name.trim(),
-          phone: admin.phone?.trim() || existing.phone,
-          role: 'super_admin'
+          name: leader.name.trim(),
+          phone: leader.phone?.trim() || existing.phone,
+          role: leader.role,
+          ...(leader.temporaryPassword
+            ? { password: leader.temporaryPassword, hasSetPassword: true }
+            : {})
         };
-        setUsers((prev) => prev.map((u) => (u.id === existing.id ? updatedAdmin : u)));
+        setUsers((prev) => prev.map((u) => (u.id === existing.id ? updatedLeader : u)));
         return {
           success: true,
-          message: `User account "${cleanEmail}" has been appointed as an Administrator.`,
-          user: updatedAdmin
+          message: `User account "${cleanEmail}" has been updated to ${roleName}.`,
+          user: updatedLeader
         };
       }
 
-      const newAdmin: UserAccount = {
-        id: `usr-adm-${Date.now()}`,
-        name: admin.name.trim(),
-        email: admin.email.trim(),
-        phone: admin.phone?.trim() || '+234 800 000 0000',
-        role: 'super_admin',
-        password: admin.temporaryPassword ? admin.temporaryPassword : '',
-        hasSetPassword: Boolean(admin.temporaryPassword),
+      const prefix = leader.role === 'super_admin' ? 'adm' : leader.role === 'principal' ? 'pri' : leader.role === 'head_teacher' ? 'hdt' : 'fin';
+      const newLeader: UserAccount = {
+        id: `usr-${prefix}-${Date.now()}`,
+        name: leader.name.trim(),
+        email: leader.email.trim(),
+        phone: leader.phone?.trim() || '+234 800 000 0000',
+        role: leader.role,
+        password: leader.temporaryPassword ? leader.temporaryPassword : '',
+        hasSetPassword: Boolean(leader.temporaryPassword),
         createdAt: new Date().toISOString()
       };
 
-      setUsers((prev) => [...prev, newAdmin]);
+      setUsers((prev) => [...prev, newLeader]);
       return {
         success: true,
-        message: `Administrator "${newAdmin.name}" (${newAdmin.email}) added successfully. They can log in immediately.`,
-        user: newAdmin
+        message: `${roleName} "${newLeader.name}" (${newLeader.email}) added successfully.`,
+        user: newLeader
       };
     },
     [users]
   );
 
-  // Remove administrator account (Pioneer only, cannot remove Pioneer or last master admin)
-  const removeAdminUser = useCallback(
+  // Add new administrator account (by Pioneer in Pioneer Portal - delegating to addLeadershipUser)
+  const addAdminUser = useCallback(
+    (admin: { name: string; email: string; phone?: string; temporaryPassword?: string }): { success: boolean; message: string; user?: UserAccount } => {
+      return addLeadershipUser({
+        ...admin,
+        role: 'super_admin'
+      });
+    },
+    [addLeadershipUser]
+  );
+
+  // Delete leadership/administrative account (Pioneer only, cannot delete Pioneer)
+  const deleteLeadershipUser = useCallback(
     (userIdOrEmail: string): { success: boolean; message: string } => {
       const target = (userIdOrEmail || '').toLowerCase().trim();
       const found = users.find((u) => u.id === userIdOrEmail || u.email.toLowerCase() === target);
       if (!found) {
-        return { success: false, message: 'Administrator account not found.' };
+        return { success: false, message: 'Official leadership account not found.' };
       }
       if (found.role === 'pioneer' || found.email.toLowerCase() === 'tpapyconsults@gmail.com') {
-        return { success: false, message: 'The Pioneer (Master Authority) account cannot be removed.' };
+        return { success: false, message: 'The Pioneer (Master Authority) account cannot be removed or deleted.' };
       }
+
+      const roleLabels: Record<string, string> = {
+        super_admin: 'School Administrator',
+        principal: 'School Principal',
+        head_teacher: 'Head Teacher',
+        finance: 'Bursar / Finance Officer',
+        teacher: 'Teacher'
+      };
+      const roleName = roleLabels[found.role] || found.role;
 
       setUsers((prev) =>
         prev.filter((u) => u.id !== found.id && u.email.toLowerCase() !== found.email.toLowerCase())
       );
-      return { success: true, message: `Administrator account for ${found.name} (${found.email}) has been removed.` };
+      return {
+        success: true,
+        message: `${roleName} account for ${found.name} (${found.email}) has been removed.`
+      };
     },
     [users]
+  );
+
+  // Remove administrator account (delegates to deleteLeadershipUser)
+  const removeAdminUser = useCallback(
+    (userIdOrEmail: string): { success: boolean; message: string } => {
+      return deleteLeadershipUser(userIdOrEmail);
+    },
+    [deleteLeadershipUser]
   );
 
   // Update administrator profile / status
@@ -580,7 +637,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteTeacherAccount,
         syncTeachersWithUsers,
         addAdminUser,
+        addLeadershipUser,
         removeAdminUser,
+        deleteLeadershipUser,
         updateAdminUser,
         isPasswordSetupOpen,
         setIsPasswordSetupOpen,

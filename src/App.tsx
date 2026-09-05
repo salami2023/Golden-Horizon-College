@@ -121,7 +121,7 @@ function AppContent() {
 
   // If role is not authorized for classes management, redirect to dashboard
   useEffect(() => {
-    const isClassesAuthorized = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
+    const isClassesAuthorized = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'teacher'].includes(currentRole);
     if (!isClassesAuthorized && activeTab === 'classes') {
       setActiveTab('dashboard');
     }

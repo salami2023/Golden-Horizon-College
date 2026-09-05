@@ -25,13 +25,16 @@ import {
 } from 'lucide-react';
 import { UserRole, SchoolThemeConfig } from '../types';
 import { useRealTime } from '../context/RealTimeContext';
+import { useAuth } from '../context/AuthContext';
 import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../assets/schoolAssets';
 import {
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
   SCHOOL_CONTACT_DETAILS,
   isPrimaryClass,
-  isSecondaryClass
+  isSecondaryClass,
+  resolveCurrentTeacher,
+  isTeacherAssignedToClass
 } from '../utils/sectionHelpers';
 
 export type ActiveTab =
@@ -70,10 +73,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   themeConfig
 }) => {
-  const { schoolSettings, classes } = useRealTime();
+  const { currentUser } = useAuth();
+  const { schoolSettings, classes, teachers } = useRealTime();
+
+  const currentTeacher = React.useMemo(() => {
+    return resolveCurrentTeacher(currentUser, teachers);
+  }, [currentUser, teachers]);
 
   const classesCount = React.useMemo(() => {
     if (!classes) return 0;
+    if (currentRole === 'teacher') {
+      return classes.filter((c) => isTeacherAssignedToClass(currentTeacher, c, currentUser)).length;
+    }
     if (currentRole === 'head_teacher') {
       return classes.filter((c) => c.section === 'Primary' || isPrimaryClass(c.name)).length;
     }
@@ -81,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return classes.filter((c) => c.section === 'Secondary' || isSecondaryClass(c.name)).length;
     }
     return classes.length;
-  }, [classes, currentRole]);
+  }, [classes, currentRole, currentTeacher, currentUser]);
 
   const navItems = [
     {
@@ -93,9 +104,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'classes' as ActiveTab,
-      label: 'Classes',
+      label: currentRole === 'teacher' ? 'My Classes' : 'Classes',
       icon: School,
-      roles: ['super_admin', 'pioneer', 'head_teacher', 'principal'],
+      roles: ['super_admin', 'pioneer', 'head_teacher', 'principal', 'teacher'],
       badge: `${classesCount || 'Active'}`
     },
     {

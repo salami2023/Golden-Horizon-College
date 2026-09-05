@@ -31,7 +31,14 @@ import {
 } from 'lucide-react';
 import { SchoolClass, Student, Teacher, UserRole } from '../../types';
 import { useRealTime } from '../../context/RealTimeContext';
-import { isPrimaryClass, isSecondaryClass, filterTeachersByRole } from '../../utils/sectionHelpers';
+import { useAuth } from '../../context/AuthContext';
+import {
+  isPrimaryClass,
+  isSecondaryClass,
+  filterTeachersByRole,
+  resolveCurrentTeacher,
+  isTeacherAssignedToClass
+} from '../../utils/sectionHelpers';
 
 interface ClassesViewProps {
   currentRole: UserRole;
@@ -56,21 +63,36 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
     reactivateStudent
   } = useRealTime();
 
-  // Role verification: Admin (super_admin, pioneer), School Principal, Head Teacher
-  const isAuthorized = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
+  const { currentUser } = useAuth();
+
+  // Academic staff check
+  const isAcademicStaff = currentRole === 'teacher';
+
+  // Resolved teacher profile for current user
+  const currentTeacher = useMemo(() => {
+    return resolveCurrentTeacher(currentUser, teachers);
+  }, [currentUser, teachers]);
+
+  // Role verification: Admin (super_admin, pioneer), School Principal, Head Teacher, Academic Staff (Teacher)
+  const isAuthorized = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'teacher'].includes(currentRole);
 
   // Role Section Access Control:
+  // - teacher: restricted strictly to classes assigned to them
   // - head_teacher: restricted strictly to Primary School classes (Nursery, Reception, Basic 1–5)
   // - principal: restricted strictly to College / Secondary classes (JSS 1–3, SSS 1–3, Grade 10–12)
   // - super_admin / pioneer: full access across all campuses
-  const userSectionScope = useMemo<'all' | 'primary' | 'secondary'>(() => {
+  const userSectionScope = useMemo<'all' | 'primary' | 'secondary' | 'teacher'>(() => {
+    if (isAcademicStaff) return 'teacher';
     if (currentRole === 'head_teacher') return 'primary';
     if (currentRole === 'principal') return 'secondary';
     return 'all';
-  }, [currentRole]);
+  }, [currentRole, isAcademicStaff]);
 
   // Section verification predicate
   const isClassInUserSection = (cls: SchoolClass): boolean => {
+    if (isAcademicStaff) {
+      return isTeacherAssignedToClass(currentTeacher, cls, currentUser);
+    }
     if (userSectionScope === 'primary') {
       return cls.section === 'Primary' || isPrimaryClass(cls.name);
     }
@@ -83,7 +105,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
   // Only classes permitted for this user's role
   const accessibleClasses = useMemo(() => {
     return classes.filter(isClassInUserSection);
-  }, [classes, userSectionScope]);
+  }, [classes, userSectionScope, isAcademicStaff, currentTeacher, currentUser]);
 
   // Available teachers filtered by section
   const availableTeachers = useMemo(() => {
@@ -107,6 +129,13 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
     }
   }, [currentRole, activeSectionTab]);
 
+  // For teachers, automatically select the first assigned class if none is selected
+  useEffect(() => {
+    if (isAcademicStaff && accessibleClasses.length > 0 && !selectedClassId) {
+      setSelectedClassId(accessibleClasses[0].id);
+    }
+  }, [isAcademicStaff, accessibleClasses, selectedClassId]);
+
   // Auto-deselect if an unauthorized class is selected
   useEffect(() => {
     if (selectedClassId) {
@@ -116,7 +145,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
         setSelectedStudentIds([]);
       }
     }
-  }, [selectedClassId, classes, userSectionScope]);
+  }, [selectedClassId, classes, userSectionScope, isAcademicStaff, currentTeacher, currentUser]);
 
   const [classSearch, setClassSearch] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
@@ -587,20 +616,26 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                {userSectionScope === 'primary'
+                {isAcademicStaff
+                  ? 'My Assigned Classes & Student Rosters'
+                  : userSectionScope === 'primary'
                   ? 'Primary Classes & Pupil Promotion'
                   : userSectionScope === 'secondary'
                   ? 'Secondary Classes & Student Promotion'
                   : 'School Classes & Pupil Promotion'}
               </h1>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                userSectionScope === 'primary'
+                isAcademicStaff
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                  : userSectionScope === 'primary'
                   ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
                   : userSectionScope === 'secondary'
                   ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
                   : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300'
               }`}>
-                {userSectionScope === 'primary'
+                {isAcademicStaff
+                  ? 'Academic Staff Portal'
+                  : userSectionScope === 'primary'
                   ? 'Head Teacher Portal'
                   : userSectionScope === 'secondary'
                   ? 'Principal Portal'
@@ -608,7 +643,9 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
               </span>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {userSectionScope === 'primary'
+              {isAcademicStaff
+                ? `Authorized access for ${currentUser?.name || 'Academic Staff'}. Viewing classes and student rosters directly assigned to your academic portfolio.`
+                : userSectionScope === 'primary'
                 ? 'Manage Primary School arms, Nursery & Basic class teachers, pupil rosters, and primary grade promotion.'
                 : userSectionScope === 'secondary'
                 ? 'Manage College/Secondary arms, JSS & SSS form masters, student rosters, and secondary promotion engine.'
@@ -628,22 +665,24 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              {userSectionScope === 'primary' ? 'Primary Classes' : userSectionScope === 'secondary' ? 'Secondary Classes' : 'All Classes'}
+              {isAcademicStaff ? 'My Classes' : userSectionScope === 'primary' ? 'Primary Classes' : userSectionScope === 'secondary' ? 'Secondary Classes' : 'All Classes'}
             </button>
           )}
 
-          <button
-            id="create-new-class-btn"
-            onClick={openAddClassModal}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg shadow-sm transition-colors ${
-              userSectionScope === 'primary'
-                ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'
-                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-            }`}
-          >
-            <Plus className="w-4 h-4" />
-            {userSectionScope === 'primary' ? 'Add Primary Class' : userSectionScope === 'secondary' ? 'Add Secondary Class' : 'Add New Class'}
-          </button>
+          {!isAcademicStaff && (
+            <button
+              id="create-new-class-btn"
+              onClick={openAddClassModal}
+              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg shadow-sm transition-colors ${
+                userSectionScope === 'primary'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'
+                  : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              {userSectionScope === 'primary' ? 'Add Primary Class' : userSectionScope === 'secondary' ? 'Add Secondary Class' : 'Add New Class'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -864,32 +903,34 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
                       </div>
 
                       {/* Class Card Quick Actions */}
-                      <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <button
-                          title="Edit Class Configuration"
-                          onClick={(e) => openEditClassModal(cls, e)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          title="Delete Class"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingClass(cls);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {!isAcademicStaff && (
+                        <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button
+                            title="Edit Class Configuration"
+                            onClick={(e) => openEditClassModal(cls, e)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            title="Delete Class"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingClass(cls);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Class Teacher Assignment Block */}
                     <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
                       <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                         <span>Class / Form Teacher</span>
-                        {cls.classTeacherId ? (
+                        {cls.classTeacherId && !isAcademicStaff ? (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -916,30 +957,34 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
                               <div className="text-[10px] text-slate-400">Assigned Form Master</div>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTeacherAssignClass(cls);
-                            }}
-                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                          >
-                            Change
-                          </button>
+                          {!isAcademicStaff && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTeacherAssignClass(cls);
+                              }}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                            >
+                              Change
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-amber-600 dark:text-amber-400 italic">No teacher assigned</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTeacherAssignClass(cls);
-                            }}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            <UserPlus className="w-3.5 h-3.5" /> Assign Teacher
-                          </button>
+                          {!isAcademicStaff && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTeacherAssignClass(cls);
+                              }}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              <UserPlus className="w-3.5 h-3.5" /> Assign Teacher
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -969,7 +1014,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
 
                   {/* Card Bottom CTA */}
                   <div className="px-5 py-3 bg-slate-50/80 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
-                    <span>Manage Pupils & Promotions</span>
+                    <span>{isAcademicStaff ? 'View Class Roster & Pupils' : 'Manage Pupils & Promotions'}</span>
                     <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
@@ -979,16 +1024,22 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
             {filteredClasses.length === 0 && (
               <div className="col-span-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center">
                 <School className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">No classes found</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Try adjusting your search criteria or create a new school class.
+                <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">
+                  {isAcademicStaff ? 'No Classes Currently Assigned' : 'No classes found'}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                  {isAcademicStaff
+                    ? `No classes are currently assigned to your teacher profile (${currentUser?.name || 'Academic Staff'}). Your School Principal or Head Teacher can allocate classes to you via the Teachers & Staff directory.`
+                    : 'Try adjusting your search criteria or create a new school class.'}
                 </p>
-                <button
-                  onClick={openAddClassModal}
-                  className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
-                >
-                  <Plus className="w-4 h-4" /> Add Class
-                </button>
+                {!isAcademicStaff && (
+                  <button
+                    onClick={openAddClassModal}
+                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+                  >
+                    <Plus className="w-4 h-4" /> Add Class
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1035,25 +1086,27 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
                   <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {selectedClass.classTeacherName || 'None Assigned'}
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <button
-                      onClick={() => setTeacherAssignClass(selectedClass)}
-                      className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                    >
-                      {selectedClass.classTeacherId ? 'Change' : 'Assign Teacher'}
-                    </button>
-                    {selectedClass.classTeacherId && (
-                      <>
-                        <span className="text-slate-300 dark:text-slate-600">•</span>
-                        <button
-                          onClick={() => setTeacherRemoveClass(selectedClass)}
-                          className="text-[11px] text-rose-500 hover:text-rose-700 font-medium"
-                        >
-                          Remove
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  {!isAcademicStaff && (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <button
+                        onClick={() => setTeacherAssignClass(selectedClass)}
+                        className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                      >
+                        {selectedClass.classTeacherId ? 'Change' : 'Assign Teacher'}
+                      </button>
+                      {selectedClass.classTeacherId && (
+                        <>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <button
+                            onClick={() => setTeacherRemoveClass(selectedClass)}
+                            className="text-[11px] text-rose-500 hover:text-rose-700 font-medium"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1118,7 +1171,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
             </div>
 
             {/* Bulk Actions Ribbon when rows are selected */}
-            {selectedStudentIds.length > 0 && (
+            {selectedStudentIds.length > 0 && !isAcademicStaff && (
               <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-3 rounded-lg flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-200">
                 <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 dark:text-blue-200">
                   <CheckSquare className="w-4 h-4 text-blue-600" />
@@ -1171,28 +1224,32 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
                 <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                   <tr>
                     <th className="p-3.5 w-10 text-center">
-                      <button
-                        type="button"
-                        onClick={handleToggleSelectAll}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                      >
-                        {selectedStudentIds.length > 0 && selectedStudentIds.length === filteredClassStudents.length ? (
-                          <CheckSquare className="w-4 h-4 text-blue-600" />
-                        ) : (
-                          <Square className="w-4 h-4" />
-                        )}
-                      </button>
+                      {!isAcademicStaff ? (
+                        <button
+                          type="button"
+                          onClick={handleToggleSelectAll}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                          {selectedStudentIds.length > 0 && selectedStudentIds.length === filteredClassStudents.length ? (
+                            <CheckSquare className="w-4 h-4 text-blue-600" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 font-mono">#</span>
+                      )}
                     </th>
                     <th className="p-3.5">Pupil Details</th>
                     <th className="p-3.5">Admission No</th>
                     <th className="p-3.5">Gender</th>
                     <th className="p-3.5">Status</th>
                     <th className="p-3.5">Parent / Guardian</th>
-                    <th className="p-3.5 text-right">Class Actions</th>
+                    <th className="p-3.5 text-right">{isAcademicStaff ? 'Academic Status' : 'Class Actions'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredClassStudents.map((std) => {
+                  {filteredClassStudents.map((std, stdIdx) => {
                     const isSelected = selectedStudentIds.includes(std.id);
                     return (
                       <tr
@@ -1201,18 +1258,22 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
                           isSelected ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''
                         }`}
                       >
-                        <td className="p-3.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStudentSelection(std.id)}
-                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="w-4 h-4 text-blue-600" />
-                            ) : (
-                              <Square className="w-4 h-4" />
-                            )}
-                          </button>
+                        <td className="p-3.5 text-center text-xs text-slate-400 font-mono">
+                          {!isAcademicStaff ? (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStudentSelection(std.id)}
+                              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Square className="w-4 h-4" />
+                              )}
+                            </button>
+                          ) : (
+                            <span>{stdIdx + 1}</span>
+                          )}
                         </td>
 
                         <td className="p-3.5">
@@ -1267,56 +1328,62 @@ export const ClassesView: React.FC<ClassesViewProps> = ({ currentRole }) => {
                         </td>
 
                         <td className="p-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {std.status === 'Active' ? (
-                              <>
-                                <button
-                                  type="button"
-                                  title="Promote Student"
-                                  onClick={() => {
-                                    setTargetClassForPromotion('');
-                                    setPromoteStudentTarget(std);
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded border border-emerald-200 dark:border-emerald-800 transition-colors"
-                                >
-                                  <ArrowUpRight className="w-3.5 h-3.5" /> Promote
-                                </button>
+                          {isAcademicStaff ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800">
+                              Enrolled Pupil
+                            </span>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1.5">
+                              {std.status === 'Active' ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    title="Promote Student"
+                                    onClick={() => {
+                                      setTargetClassForPromotion('');
+                                      setPromoteStudentTarget(std);
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded border border-emerald-200 dark:border-emerald-800 transition-colors"
+                                  >
+                                    <ArrowUpRight className="w-3.5 h-3.5" /> Promote
+                                  </button>
 
-                                <button
-                                  type="button"
-                                  title="Demote or Reassign Class"
-                                  onClick={() => {
-                                    setTargetClassForPromotion('');
-                                    setDemoteStudentTarget(std);
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded border border-slate-200 dark:border-slate-700 transition-colors"
-                                >
-                                  <ArrowDownLeft className="w-3.5 h-3.5" /> Move
-                                </button>
+                                  <button
+                                    type="button"
+                                    title="Demote or Reassign Class"
+                                    onClick={() => {
+                                      setTargetClassForPromotion('');
+                                      setDemoteStudentTarget(std);
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded border border-slate-200 dark:border-slate-700 transition-colors"
+                                  >
+                                    <ArrowDownLeft className="w-3.5 h-3.5" /> Move
+                                  </button>
 
+                                  <button
+                                    type="button"
+                                    title="Graduate / Archive Student"
+                                    onClick={() => {
+                                      setArchiveStatusSelection('Graduated');
+                                      setArchiveStudentTarget(std);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
+                                  >
+                                    <Archive className="w-4 h-4" />
+                                  </button>
+                                </>
+                              ) : (
                                 <button
                                   type="button"
-                                  title="Graduate / Archive Student"
-                                  onClick={() => {
-                                    setArchiveStatusSelection('Graduated');
-                                    setArchiveStudentTarget(std);
-                                  }}
-                                  className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
+                                  title="Reactivate Student to Active"
+                                  onClick={() => reactivateStudent(std.id, `${std.firstName} ${std.lastName}`, actor)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 rounded border border-blue-200 dark:border-blue-800 transition-colors"
                                 >
-                                  <Archive className="w-4 h-4" />
+                                  <RefreshCw className="w-3.5 h-3.5" /> Restore Active
                                 </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                title="Reactivate Student to Active"
-                                onClick={() => reactivateStudent(std.id, `${std.firstName} ${std.lastName}`, actor)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 rounded border border-blue-200 dark:border-blue-800 transition-colors"
-                              >
-                                <RefreshCw className="w-3.5 h-3.5" /> Restore Active
-                              </button>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );

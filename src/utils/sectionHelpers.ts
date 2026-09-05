@@ -196,6 +196,50 @@ export function getAssignedClassesForTeacher(
 }
 
 /**
+ * Checks whether a specific class is assigned to a teacher.
+ */
+export function isTeacherAssignedToClass(
+  teacher: Teacher | null | undefined,
+  cls: SchoolClass,
+  currentUser?: UserAccount | null
+): boolean {
+  if (!cls) return false;
+  const clsName = (cls.name || '').trim().toLowerCase();
+
+  // 1. Direct classTeacherId match
+  if (cls.classTeacherId) {
+    if (teacher && cls.classTeacherId === teacher.id) return true;
+    if (currentUser?.id && cls.classTeacherId === currentUser.id) return true;
+    if (currentUser?.teacherId && cls.classTeacherId === currentUser.teacherId) return true;
+  }
+
+  // 2. Direct classTeacherName match
+  if (cls.classTeacherName) {
+    const teacherName = cls.classTeacherName.trim().toLowerCase();
+    if (teacher?.name && teacher.name.trim().toLowerCase() === teacherName) return true;
+    if (currentUser?.name && currentUser.name.trim().toLowerCase() === teacherName) return true;
+  }
+
+  // 3. Teacher's designated formClass
+  if (teacher?.formClass && teacher.formClass.trim().toLowerCase() === clsName) {
+    return true;
+  }
+
+  // 4. Teacher's assignedClasses list
+  if (teacher && Array.isArray(teacher.assignedClasses)) {
+    if (
+      teacher.assignedClasses.some(
+        (ac) => ac && (ac.trim().toLowerCase() === clsName || ac === cls.id)
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Finds the currently active Teacher profile for the authenticated user,
  * checking teacherId, registered email, or name.
  */

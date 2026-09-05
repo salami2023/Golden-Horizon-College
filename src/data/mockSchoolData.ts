@@ -328,6 +328,19 @@ export const INITIAL_TEACHERS: Teacher[] = [
     assignedClasses: ['Basic 3', 'Basic 1'],
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
     joinDate: '2021-01-12'
+  },
+  {
+    id: 'tch-207',
+    staffId: 'KS-STF-050',
+    name: 'Mrs. Funke Akindele',
+    email: 'funke.akindele@goldenhorizon.edu.ng',
+    phone: '08023334567',
+    qualification: 'B.Ed. English Language & Literature',
+    subjects: ['English Language', 'Literature in English'],
+    formClass: 'Grade 10 A',
+    assignedClasses: ['Grade 10 A', 'Grade 10 B'],
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+    joinDate: '2022-09-01'
   }
 ];
 
