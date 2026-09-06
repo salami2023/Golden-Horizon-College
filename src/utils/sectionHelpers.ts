@@ -536,6 +536,77 @@ export function getTeacherAssignedClassNames(
 }
 
 /**
+ * Returns only the class names where a teacher is specifically designated as the Class Teacher (Form Teacher).
+ */
+export function getTeacherClassTeacherAssignedClasses(
+  teacher: Teacher | null | undefined,
+  allClasses: SchoolClass[] = [],
+  currentUser?: UserAccount | null
+): string[] {
+  // Cross-portal administrative override:
+  if (currentUser?.role === 'pioneer' || currentUser?.role === 'super_admin') {
+    return allClasses.map((c) => c.name);
+  }
+  if (currentUser?.role === 'principal') {
+    return allClasses.filter((c) => isSecondaryClass(c.name)).map((c) => c.name);
+  }
+  if (currentUser?.role === 'head_teacher') {
+    return allClasses.filter((c) => isPrimaryClass(c.name)).map((c) => c.name);
+  }
+
+  const assigned = new Set<string>();
+
+  if (teacher?.formClass && teacher.formClass.trim()) {
+    assigned.add(teacher.formClass.trim());
+  }
+
+  if (allClasses && allClasses.length > 0) {
+    allClasses.forEach((cls) => {
+      if (
+        (cls.classTeacherId && teacher?.id && cls.classTeacherId === teacher.id) ||
+        (cls.classTeacherId && currentUser?.id && cls.classTeacherId === currentUser.id) ||
+        (cls.classTeacherId && currentUser?.teacherId && cls.classTeacherId === currentUser.teacherId) ||
+        (cls.classTeacherName && teacher?.name && cls.classTeacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase()) ||
+        (cls.classTeacherName && currentUser?.name && cls.classTeacherName.trim().toLowerCase() === currentUser.name.trim().toLowerCase())
+      ) {
+        if (cls.name) assigned.add(cls.name.trim());
+      }
+    });
+  }
+
+  return Array.from(assigned);
+}
+
+/**
+ * Checks whether a teacher is a designated Class Teacher for at least one class.
+ */
+export function isTeacherAClassTeacher(
+  teacher: Teacher | null | undefined,
+  allClasses: SchoolClass[] = [],
+  currentUser?: UserAccount | null
+): boolean {
+  if (currentUser?.role === 'pioneer' || currentUser?.role === 'super_admin' || currentUser?.role === 'principal' || currentUser?.role === 'head_teacher') {
+    return true;
+  }
+  const classes = getTeacherClassTeacherAssignedClasses(teacher, allClasses, currentUser);
+  return classes.length > 0;
+}
+
+/**
+ * Checks whether a teacher is assigned subjects only (i.e. has NO class teacher assignment).
+ */
+export function isTeacherSubjectOnly(
+  teacher: Teacher | null | undefined,
+  allClasses: SchoolClass[] = [],
+  currentUser?: UserAccount | null
+): boolean {
+  if (currentUser?.role === 'pioneer' || currentUser?.role === 'super_admin' || currentUser?.role === 'principal' || currentUser?.role === 'head_teacher') {
+    return false;
+  }
+  return !isTeacherAClassTeacher(teacher, allClasses, currentUser);
+}
+
+/**
  * Finds the currently active Teacher profile for the authenticated user,
  * checking teacherId, registered email, or name.
  */

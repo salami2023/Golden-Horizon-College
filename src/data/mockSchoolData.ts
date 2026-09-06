@@ -341,6 +341,19 @@ export const INITIAL_TEACHERS: Teacher[] = [
     assignedClasses: ['Grade 10 A', 'Grade 10 B'],
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
     joinDate: '2022-09-01'
+  },
+  {
+    id: 'tch-208',
+    staffId: 'KS-STF-055',
+    name: 'Mr. Ibrahim Lawal',
+    email: 'ibrahim.lawal@goldenhorizon.edu.ng',
+    phone: '08034445566',
+    qualification: 'B.Sc. Chemistry & Science Education',
+    subjects: ['Chemistry', 'Biology'],
+    secondaryTier: 'Senior Secondary',
+    assignedClasses: ['Grade 10 A', 'Grade 10 B', 'Grade 11 Science'],
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
+    joinDate: '2023-01-10'
   }
 ];
 

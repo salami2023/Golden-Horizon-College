@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Send,
   MessageSquare,
@@ -20,10 +20,14 @@ import {
 } from 'lucide-react';
 import { BroadcastLog, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import { useRealTime } from '../../context/RealTimeContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
-  SCHOOL_CONTACT_DETAILS
+  SCHOOL_CONTACT_DETAILS,
+  resolveCurrentTeacher,
+  isTeacherSubjectOnly
 } from '../../utils/sectionHelpers';
 
 interface CommunicationCenterViewProps {
@@ -39,8 +43,20 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
   onDeleteBroadcast,
   currentRole = 'super_admin'
 }) => {
+  const { classes, teachers } = useRealTime();
+  const { currentUser } = useAuth();
+  const isTeacher = currentRole === 'teacher';
   const isPrincipal = currentRole === 'principal';
   const isHeadTeacher = currentRole === 'head_teacher';
+
+  const currentTeacher = useMemo(() => {
+    return resolveCurrentTeacher(currentUser, teachers);
+  }, [currentUser, teachers]);
+
+  const isSubjectOnlyTeacher = useMemo(() => {
+    if (!isTeacher) return false;
+    return isTeacherSubjectOnly(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
 
   const [channel, setChannel] = useState<'SMS' | 'Email' | 'WhatsApp'>('SMS');
   const [recipientGroup, setRecipientGroup] = useState(
@@ -160,6 +176,28 @@ export const CommunicationCenterView: React.FC<CommunicationCenterViewProps> = (
       if (onDeleteBroadcast) onDeleteBroadcast(id);
     }
   };
+
+  if (isTeacher && isSubjectOnlyTeacher) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto my-12 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-slate-900 text-center space-y-4 shadow-sm">
+        <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 flex items-center justify-center mx-auto text-amber-700 dark:text-amber-300">
+          <Lock className="h-7 w-7" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+            SMS & Communication Broadcast Restricted
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            Teachers assigned to subjects only do not have access to SMS and communication broadcasts.
+            School broadcasts are managed exclusively by School Leadership and Administrative Officers.
+          </p>
+        </div>
+        <div className="pt-2 text-[11px] font-semibold text-slate-500">
+          Allocated Subject(s): <span className="font-bold text-slate-700 dark:text-slate-300">{currentTeacher?.subjects?.join(', ') || 'Assigned Subjects'}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

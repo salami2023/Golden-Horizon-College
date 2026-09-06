@@ -36,6 +36,7 @@ import {
   isSecondaryClass,
   resolveCurrentTeacher,
   isTeacherAssignedToClass,
+  isTeacherSubjectOnly,
   getAllowedPortalsForUser
 } from '../utils/sectionHelpers';
 
@@ -241,9 +242,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
 
-  const filteredItems = navItems.filter((item) =>
-    item.roles.includes(currentRole)
-  );
+  const isSubjectOnly = React.useMemo(() => {
+    if (currentRole !== 'teacher') return false;
+    return isTeacherSubjectOnly(currentTeacher, classes, currentUser);
+  }, [currentRole, currentTeacher, classes, currentUser]);
+
+  const filteredItems = navItems.filter((item) => {
+    if (!item.roles.includes(currentRole)) return false;
+    // Teachers assigned subjects only have no access to parent portal, student directory, sms/broadcast, and attendance
+    if (isSubjectOnly) {
+      if (['students', 'parent_portal', 'communication', 'attendance'].includes(item.id)) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   return (
     <aside

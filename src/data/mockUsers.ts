@@ -63,6 +63,19 @@ export const INITIAL_USER_ACCOUNTS: UserAccount[] = [
     lastLoginAt: undefined
   },
   {
+    id: 'usr-teacher-007',
+    name: 'Mr. Ibrahim Lawal',
+    email: 'ibrahim.lawal@goldenhorizon.edu.ng',
+    phone: '08034445566',
+    role: 'teacher',
+    teacherId: 'tch-208',
+    password: '',
+    hasSetPassword: false,
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
+    createdAt: '2026-09-01T08:00:00.000Z',
+    lastLoginAt: undefined
+  },
+  {
     id: 'usr-finance-006',
     name: 'Mr. Chidi Okonkwo',
     email: 'bursar@goldenhorizon.edu.ng',

@@ -25,7 +25,9 @@ import {
   isPrimaryClass,
   resolveCurrentTeacher,
   isTeacherClassTeacher,
-  getTeacherAssignedClassNames
+  getTeacherAssignedClassNames,
+  getTeacherClassTeacherAssignedClasses,
+  isTeacherSubjectOnly
 } from '../../utils/sectionHelpers';
 
 interface AttendanceTrackerProps {
@@ -54,10 +56,15 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
     return resolveCurrentTeacher(currentUser, teachers);
   }, [currentUser, teachers]);
 
-  // Classes assigned to this teacher (Form class + subject classes)
-  const teacherAssignedClassNames = useMemo(() => {
+  // Classes assigned to this teacher as designated class/form teacher
+  const teacherClassTeacherClasses = useMemo(() => {
     if (!isTeacher) return [];
-    return getTeacherAssignedClassNames(currentTeacher, classes, currentUser);
+    return getTeacherClassTeacherAssignedClasses(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
+
+  const isSubjectOnlyTeacher = useMemo(() => {
+    if (!isTeacher) return false;
+    return isTeacherSubjectOnly(currentTeacher, classes, currentUser);
   }, [isTeacher, currentTeacher, classes, currentUser]);
 
   // Discover existing classes from student data
@@ -67,7 +74,7 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
 
   const availableClasses: string[] = useMemo(() => {
     if (isTeacher) {
-      return teacherAssignedClassNames;
+      return teacherClassTeacherClasses;
     }
     if (isPrincipal) {
       return Array.from<string>(new Set([...SECONDARY_CLASSES, ...existingClasses.filter(c => isSecondaryClass(c))]));
@@ -76,12 +83,10 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
       return Array.from<string>(new Set([...PRIMARY_CLASSES, ...existingClasses.filter(c => isPrimaryClass(c))]));
     }
     return Array.from<string>(new Set([...SECONDARY_CLASSES, ...PRIMARY_CLASSES, ...existingClasses]));
-  }, [isTeacher, teacherAssignedClassNames, isPrincipal, isHeadTeacher, existingClasses]);
+  }, [isTeacher, teacherClassTeacherClasses, isPrincipal, isHeadTeacher, existingClasses]);
 
   const initialClass = isTeacher
-    ? (currentTeacher?.formClass && teacherAssignedClassNames.includes(currentTeacher.formClass)
-        ? currentTeacher.formClass
-        : teacherAssignedClassNames[0] || 'Grade 10 A')
+    ? (teacherClassTeacherClasses[0] || 'Grade 10 A')
     : isHeadTeacher
     ? (availableClasses.find(c => isPrimaryClass(c)) || 'Basic 1')
     : (availableClasses.find(c => isSecondaryClass(c)) || 'Grade 10 A');
@@ -147,6 +152,28 @@ export const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
 
   const totalPresent = classStudents.filter((s) => (activeDayAttendance[s.id] || 'Present') === 'Present').length;
   const totalAbsent = classStudents.filter((s) => activeDayAttendance[s.id] === 'Absent').length;
+
+  if (isTeacher && isSubjectOnlyTeacher) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto my-12 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-slate-900 text-center space-y-4 shadow-sm">
+        <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 flex items-center justify-center mx-auto text-amber-700 dark:text-amber-300">
+          <Lock className="h-7 w-7" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+            Attendance Register Access Restricted
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            Teachers assigned to subjects only do not have access to the class attendance register.
+            Daily attendance recording and register management are reserved exclusively for designated Class Teachers and School Administrators.
+          </p>
+        </div>
+        <div className="pt-2 text-[11px] font-semibold text-slate-500">
+          Allocated Subject(s): <span className="font-bold text-slate-700 dark:text-slate-300">{currentTeacher?.subjects?.join(', ') || 'Assigned Subjects'}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

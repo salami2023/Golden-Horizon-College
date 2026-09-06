@@ -35,6 +35,8 @@ import {
   isTeacherClassTeacher,
   isTeacherAllocatedToSubject,
   getTeacherAssignedClassNames,
+  getTeacherClassTeacherAssignedClasses,
+  isTeacherSubjectOnly,
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
   SCHOOL_CONTACT_DETAILS
@@ -76,26 +78,41 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
     return getTeacherAssignedClassNames(currentTeacher, classes, currentUser);
   }, [isTeacher, currentTeacher, classes, currentUser]);
 
+  const isTeacherSubjectOnlyUser = useMemo(() => {
+    if (!isTeacher) return false;
+    return isTeacherSubjectOnly(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
+
+  const teacherClassTeacherClasses = useMemo(() => {
+    if (!isTeacher) return [];
+    return getTeacherClassTeacherAssignedClasses(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
+
   const roleSection = getSectionForRole(currentRole as UserRole);
 
   // RBAC Scoping:
-  // - Teachers: strictly scoped to classes assigned to them!
+  // - Class teachers: assigned class(es) + classes where they teach subjects
+  // - Subject-only teachers: classes where their subjects are taught
   // - Principal: Secondary classes
   // - Head Teacher: Primary classes
   // - Admin / Pioneer: All classes
   const visibleReportCards: StudentReportCard[] = useMemo(() => {
     if (isTeacher) {
-      return reportCards.filter((rc) => teacherAssignedClassNames.includes(rc.classGroup));
+      return reportCards.filter((rc) => 
+        teacherAssignedClassNames.includes(rc.classGroup) || teacherClassTeacherClasses.includes(rc.classGroup)
+      );
     }
     return filterStudentsByRole<StudentReportCard>(reportCards, currentRole as UserRole);
-  }, [reportCards, isTeacher, teacherAssignedClassNames, currentRole]);
+  }, [reportCards, isTeacher, teacherAssignedClassNames, teacherClassTeacherClasses, currentRole]);
 
   const visibleStudents: Student[] = useMemo(() => {
     if (isTeacher) {
-      return students.filter((std) => teacherAssignedClassNames.includes(std.classGroup));
+      return students.filter((std) => 
+        teacherAssignedClassNames.includes(std.classGroup) || teacherClassTeacherClasses.includes(std.classGroup)
+      );
     }
     return filterStudentsByRole<Student>(students, currentRole as UserRole);
-  }, [students, isTeacher, teacherAssignedClassNames, currentRole]);
+  }, [students, isTeacher, teacherAssignedClassNames, teacherClassTeacherClasses, currentRole]);
 
   const [selectedCardId, setSelectedCardId] = useState<string>(visibleReportCards[0]?.id || '');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -120,8 +137,22 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
   const isClassTeacherForActiveCard = useMemo(() => {
     if (!activeCard) return false;
     if (['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole)) return true;
-    return isTeacherClassTeacher(currentTeacher, activeCard.classGroup, currentUser, classes);
-  }, [activeCard, currentRole, currentTeacher, currentUser, classes]);
+    return (
+      isTeacherClassTeacher(currentTeacher, activeCard.classGroup, currentUser, classes) ||
+      teacherClassTeacherClasses.includes(activeCard.classGroup)
+    );
+  }, [activeCard, currentRole, currentTeacher, currentUser, classes, teacherClassTeacherClasses]);
+
+  // Subject scores filtered according to RBAC:
+  // - Class teacher has access to all the academic grades of all students in their assigned class
+  // - Teachers assigned subjects only should only have access to grades in their subjects
+  const displayedSubjectScores = useMemo(() => {
+    if (!activeCard) return [];
+    if (isTeacher && !isClassTeacherForActiveCard) {
+      return activeCard.subjectScores.filter((s) => isTeacherAllocatedToSubject(currentTeacher, s.subjectName));
+    }
+    return activeCard.subjectScores;
+  }, [activeCard, isTeacher, isClassTeacherForActiveCard, currentTeacher]);
 
   // Find class teacher name for active card
   const activeClassTeacherName = useMemo(() => {
@@ -134,7 +165,8 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
 
   // Permission Checks:
   // Admin, Principal, Head Teacher have full edit/delete/update access.
-  // Teachers can edit/update grades for allocated subjects, and class teachers can edit class comments.
+  // Class teachers have access to all academic grades and comments for students in their assigned class.
+  // Subject teachers can edit grades for allocated subjects.
   const canEditGrades = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'teacher'].includes(currentRole);
   const canDeleteOrAddCard = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
 
@@ -158,7 +190,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
   };
 
   const handleScoreChange = (
-    subjectIdx: number,
+    subjectName: string,
     field: 'ca1' | 'ca2' | 'exam',
     val: number
   ) => {
@@ -168,10 +200,11 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
     }
     if (!activeCard) return;
 
+    const subjectIdx = activeCard.subjectScores.findIndex((s) => s.subjectName === subjectName);
+    if (subjectIdx === -1) return;
     const subjectToEdit = activeCard.subjectScores[subjectIdx];
-    if (!subjectToEdit) return;
 
-    if (isTeacher && !isTeacherAllocatedToSubject(currentTeacher, subjectToEdit.subjectName)) {
+    if (isTeacher && !isClassTeacherForActiveCard && !isTeacherAllocatedToSubject(currentTeacher, subjectToEdit.subjectName)) {
       alert(`Access Denied: As a subject teacher, you can only enter or update grades for subjects allocated to you (${currentTeacher?.subjects?.join(', ') || 'None'}).`);
       return;
     }
@@ -369,7 +402,30 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
           : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
       }`}>
         <div className="flex items-center gap-2 font-medium">
-          {canEditGrades ? (
+          {isTeacher ? (
+            isClassTeacherForActiveCard ? (
+              <>
+                <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>
+                  <strong>Class Teacher Academic Access:</strong> Authorized as Class Teacher for <strong>{activeCard?.classGroup}</strong>. You have full access to all academic grades, continuous assessments, and official terminal remarks for all students in your assigned class.
+                </span>
+              </>
+            ) : isTeacherSubjectOnlyUser ? (
+              <>
+                <BookOpen className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>
+                  <strong>Subject Teacher Gradebook:</strong> You have access exclusively to grades and assessments in your allocated subject(s) (<strong>{currentTeacher?.subjects?.join(', ') || 'Allocated Subjects'}</strong>).
+                </span>
+              </>
+            ) : (
+              <>
+                <BookOpen className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>
+                  <strong>Subject Teacher View:</strong> Viewing grades for your allocated subject(s) (<strong>{currentTeacher?.subjects?.join(', ')}</strong>). Full academic grade access applies to your assigned class (<strong>{teacherClassTeacherClasses.join(', ')}</strong>).
+                </span>
+              </>
+            )
+          ) : canEditGrades ? (
             <>
               <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>
@@ -394,7 +450,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
             </span>
           )}
           <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-            Role: {currentRole}
+            {isTeacher ? (isClassTeacherForActiveCard ? `Class Teacher (${activeCard?.classGroup})` : isTeacherSubjectOnlyUser ? 'Subject Teacher' : 'Teacher') : `Role: ${currentRole}`}
           </span>
         </div>
       </div>
@@ -419,7 +475,7 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
               <Plus className="h-4 w-4" /> Issue Report Card
             </button>
           )}
-          {canEditGrades && (
+          {canEditGrades && (!isTeacher || isClassTeacherForActiveCard) && (
             <button
               onClick={handleGenerateAIRemark}
               disabled={isGeneratingAI}
@@ -564,111 +620,125 @@ export const AcademicsReportCards: React.FC<AcademicsReportCardsProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {activeCard.subjectScores.map((score, idx) => {
-                    const isAllocated = isTeacher ? isTeacherAllocatedToSubject(currentTeacher, score.subjectName) : true;
-                    const canEditThisRow = canEditGrades && isAllocated;
+                  {displayedSubjectScores.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-6 text-center text-slate-500 dark:text-slate-400">
+                        <BookOpen className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                        No scores recorded for your allocated subject(s) ({currentTeacher?.subjects?.join(', ') || 'Allocated Subjects'}) in this class.
+                      </td>
+                    </tr>
+                  ) : (
+                    displayedSubjectScores.map((score) => {
+                      const isAllocated = isTeacher ? isTeacherAllocatedToSubject(currentTeacher, score.subjectName) : true;
+                      const canEditThisRow = canEditGrades && (isClassTeacherForActiveCard || isAllocated);
 
-                    return (
-                      <tr
-                        key={score.subjectName}
-                        className={`transition-colors ${
-                          isTeacher && isAllocated
-                            ? 'bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50/80'
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                        }`}
-                      >
-                        <td className="p-3 font-bold text-slate-900 dark:text-white">
-                          <div className="flex items-center gap-2">
-                            <span>{score.subjectName}</span>
-                            {isTeacher && isAllocated && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center gap-1">
-                                <BookOpen className="h-3 w-3 text-emerald-600" /> Allocated to You
-                              </span>
-                            )}
-                            {isTeacher && !isAllocated && (
-                              <span className="text-[10px] text-slate-400 font-normal flex items-center gap-1">
-                                <Lock className="h-3 w-3 inline text-slate-400" /> Other Subject
-                              </span>
-                            )}
-                          </div>
-                        </td>
+                      return (
+                        <tr
+                          key={score.subjectName}
+                          className={`transition-colors ${
+                            isTeacher && (isClassTeacherForActiveCard || isAllocated)
+                              ? 'bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50/80'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                          }`}
+                        >
+                          <td className="p-3 font-bold text-slate-900 dark:text-white">
+                            <div className="flex items-center gap-2">
+                              <span>{score.subjectName}</span>
+                              {isTeacher && isClassTeacherForActiveCard && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 flex items-center gap-1">
+                                  <ShieldCheck className="h-3 w-3 text-indigo-600" /> Class Teacher Access
+                                </span>
+                              )}
+                              {isTeacher && !isClassTeacherForActiveCard && isAllocated && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center gap-1">
+                                  <BookOpen className="h-3 w-3 text-emerald-600" /> Allocated to You
+                                </span>
+                              )}
+                              {isTeacher && !isClassTeacherForActiveCard && !isAllocated && (
+                                <span className="text-[10px] text-slate-400 font-normal flex items-center gap-1">
+                                  <Lock className="h-3 w-3 inline text-slate-400" /> Other Subject
+                                </span>
+                              )}
+                            </div>
+                          </td>
 
-                        {/* Interactive Edit Inputs */}
-                        <td className="p-3 text-center">
-                          <input
-                            type="number"
-                            max={15}
-                            min={0}
-                            disabled={!canEditThisRow}
-                            value={score.ca1}
-                            onChange={(e) => handleScoreChange(idx, 'ca1', parseInt(e.target.value) || 0)}
-                            className={`w-12 text-center p-1 rounded border font-mono font-bold transition-all ${
-                              canEditThisRow
-                                ? 'border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500'
-                                : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 opacity-60 cursor-not-allowed text-slate-400'
-                            }`}
-                            title={!canEditThisRow ? 'Only allocated subject teacher or leadership can edit grades for this subject' : ''}
-                          />
-                        </td>
+                          {/* Interactive Edit Inputs */}
+                          <td className="p-3 text-center">
+                            <input
+                              type="number"
+                              max={15}
+                              min={0}
+                              disabled={!canEditThisRow}
+                              value={score.ca1}
+                              onChange={(e) => handleScoreChange(score.subjectName, 'ca1', parseInt(e.target.value) || 0)}
+                              className={`w-12 text-center p-1 rounded border font-mono font-bold transition-all ${
+                                canEditThisRow
+                                  ? 'border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500'
+                                  : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 opacity-60 cursor-not-allowed text-slate-400'
+                              }`}
+                              title={!canEditThisRow ? 'Only allocated subject teacher or leadership can edit grades for this subject' : ''}
+                            />
+                          </td>
 
-                        <td className="p-3 text-center">
-                          <input
-                            type="number"
-                            max={15}
-                            min={0}
-                            disabled={!canEditThisRow}
-                            value={score.ca2}
-                            onChange={(e) => handleScoreChange(idx, 'ca2', parseInt(e.target.value) || 0)}
-                            className={`w-12 text-center p-1 rounded border font-mono font-bold transition-all ${
-                              canEditThisRow
-                                ? 'border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500'
-                                : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 opacity-60 cursor-not-allowed text-slate-400'
-                            }`}
-                            title={!canEditThisRow ? 'Only allocated subject teacher or leadership can edit grades for this subject' : ''}
-                          />
-                        </td>
+                          <td className="p-3 text-center">
+                            <input
+                              type="number"
+                              max={15}
+                              min={0}
+                              disabled={!canEditThisRow}
+                              value={score.ca2}
+                              onChange={(e) => handleScoreChange(score.subjectName, 'ca2', parseInt(e.target.value) || 0)}
+                              className={`w-12 text-center p-1 rounded border font-mono font-bold transition-all ${
+                                canEditThisRow
+                                  ? 'border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500'
+                                  : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 opacity-60 cursor-not-allowed text-slate-400'
+                              }`}
+                              title={!canEditThisRow ? 'Only allocated subject teacher or leadership can edit grades for this subject' : ''}
+                            />
+                          </td>
 
-                        <td className="p-3 text-center">
-                          <input
-                            type="number"
-                            max={70}
-                            min={0}
-                            disabled={!canEditThisRow}
-                            value={score.exam}
-                            onChange={(e) => handleScoreChange(idx, 'exam', parseInt(e.target.value) || 0)}
-                            className={`w-16 text-center p-1 rounded border font-mono font-bold transition-all ${
-                              canEditThisRow
-                                ? 'border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500'
-                                : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 opacity-60 cursor-not-allowed text-slate-400'
-                            }`}
-                            title={!canEditThisRow ? 'Only allocated subject teacher or leadership can edit grades for this subject' : ''}
-                          />
-                        </td>
+                          <td className="p-3 text-center">
+                            <input
+                              type="number"
+                              max={70}
+                              min={0}
+                              disabled={!canEditThisRow}
+                              value={score.exam}
+                              onChange={(e) => handleScoreChange(score.subjectName, 'exam', parseInt(e.target.value) || 0)}
+                              className={`w-16 text-center p-1 rounded border font-mono font-bold transition-all ${
+                                canEditThisRow
+                                  ? 'border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500'
+                                  : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 opacity-60 cursor-not-allowed text-slate-400'
+                              }`}
+                              title={!canEditThisRow ? 'Only allocated subject teacher or leadership can edit grades for this subject' : ''}
+                            />
+                          </td>
 
-                        <td className="p-3 text-center font-black text-slate-900 dark:text-white">
-                          {score.total}
-                        </td>
+                          <td className="p-3 text-center font-black text-slate-900 dark:text-white">
+                            {score.total}
+                          </td>
 
-                        <td className="p-3 text-center">
-                          <span
-                            className={`px-2 py-0.5 rounded font-extrabold text-xs ${
-                              score.grade === 'A'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                : score.grade === 'B'
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                            }`}
-                          >
-                            {score.grade}
-                          </span>
-                        </td>
+                          <td className="p-3 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded font-extrabold text-xs ${
+                                score.grade === 'A'
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                  : score.grade === 'B'
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              }`}
+                            >
+                              {score.grade}
+                            </span>
+                          </td>
 
-                        <td className="p-3 text-slate-600 dark:text-slate-400 font-medium italic">
-                          {score.remark}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          <td className="p-3 text-slate-600 dark:text-slate-400 font-medium italic">
+                            {score.remark}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

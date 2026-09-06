@@ -49,12 +49,13 @@ import { TransportHostelView } from './components/views/TransportHostelView';
 import { CommunicationCenterView } from './components/views/CommunicationCenterView';
 import { AuditLogsView } from './components/views/AuditLogsView';
 import { ArrowRightLeft, ShieldCheck, Eye } from 'lucide-react';
-import { getAllowedPortalsForUser } from './utils/sectionHelpers';
+import { getAllowedPortalsForUser, resolveCurrentTeacher, isTeacherSubjectOnly } from './utils/sectionHelpers';
 
 function AppContent() {
   const {
     students,
     teachers,
+    classes,
     invoices,
     transactions,
     reportCards,
@@ -189,6 +190,25 @@ function AppContent() {
       setActiveTab('dashboard');
     }
   }, [currentRole, activeTab]);
+
+  // Resolved teacher profile for authenticated user
+  const currentTeacher = React.useMemo(() => {
+    return resolveCurrentTeacher(currentUser, teachers);
+  }, [currentUser, teachers]);
+
+  const isTeacherSubjectOnlyUser = React.useMemo(() => {
+    if (currentRole !== 'teacher') return false;
+    return isTeacherSubjectOnly(currentTeacher, classes, currentUser);
+  }, [currentRole, currentTeacher, classes, currentUser]);
+
+  // Teachers assigned subjects only have no access to parent, student directory, sms/broadcast, and attendance
+  useEffect(() => {
+    if (isTeacherSubjectOnlyUser) {
+      if (['students', 'parent_portal', 'communication', 'attendance'].includes(activeTab)) {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [isTeacherSubjectOnlyUser, activeTab]);
 
   // If no user is authenticated, render the dedicated Login Page
   if (!currentUser) {

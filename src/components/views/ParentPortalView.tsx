@@ -27,7 +27,10 @@ import {
   isSecondaryClass,
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
-  SCHOOL_CONTACT_DETAILS
+  SCHOOL_CONTACT_DETAILS,
+  resolveCurrentTeacher,
+  getTeacherClassTeacherAssignedClasses,
+  isTeacherSubjectOnly
 } from '../../utils/sectionHelpers';
 import { DEFAULT_SCHOOL_LOGO_DATA_URI } from '../../assets/schoolAssets';
 
@@ -46,8 +49,24 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
   onUpdateStudent,
   currentRole = 'parent'
 }) => {
-  const { schoolSettings } = useRealTime();
+  const { schoolSettings, classes, teachers } = useRealTime();
   const { currentUser } = useAuth();
+
+  const isTeacher = currentRole === 'teacher';
+
+  const currentTeacher = useMemo(() => {
+    return resolveCurrentTeacher(currentUser, teachers);
+  }, [currentUser, teachers]);
+
+  const teacherClassTeacherClasses = useMemo(() => {
+    if (!isTeacher) return [];
+    return getTeacherClassTeacherAssignedClasses(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
+
+  const isSubjectOnly = useMemo(() => {
+    if (!isTeacher) return false;
+    return isTeacherSubjectOnly(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
 
   const isPrincipalContext = currentRole === 'principal' || currentUser?.role === 'principal';
   const isHeadTeacherContext = currentRole === 'head_teacher' || currentUser?.role === 'head_teacher';
@@ -57,6 +76,10 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
   );
 
   const availableStudents = useMemo(() => {
+    // Class teacher should only have access to the parent of students in the class assigned to them
+    if (isTeacher) {
+      return students.filter((s) => teacherClassTeacherClasses.includes(s.classGroup));
+    }
     if (isPrincipalContext) {
       return students.filter((s) => isSecondaryClass(s.classGroup));
     }
@@ -70,13 +93,14 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
       return students.filter((s) => isPrimaryClass(s.classGroup));
     }
     return students;
-  }, [students, isPrincipalContext, isHeadTeacherContext, sectionFilter]);
+  }, [students, isTeacher, teacherClassTeacherClasses, isPrincipalContext, isHeadTeacherContext, sectionFilter]);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>(availableStudents[0]?.id || '');
   const [isEditingParent, setIsEditingParent] = useState(false);
 
   // RBAC Permission Check: Administrator, School Principal, Head Teacher, and Parent have permission to update parent details
-  const canEditParent = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'parent'].includes(currentRole);
+  // Class teacher has permission to update parent details for their assigned class
+  const canEditParent = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'parent'].includes(currentRole) || (isTeacher && !isSubjectOnly);
 
   const activeStudent = availableStudents.find((s) => s.id === selectedStudentId) || availableStudents[0] || null;
   const activeReport = activeStudent ? reportCards.find((r) => r.studentId === activeStudent.id) : null;
@@ -113,6 +137,24 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
     setIsEditingParent(false);
   };
 
+  if (isSubjectOnly) {
+    return (
+      <div className="space-y-6">
+        <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-2xl mx-auto space-y-4 my-8">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600">
+            <Lock className="w-7 h-7" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">
+            Parent Portal Access Restricted
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
+            You are currently authenticated as a <strong>Subject Teacher</strong> ({currentTeacher?.subjects?.join(', ') || 'Allocated Subjects'}). Subject teachers have direct access exclusively to academic assessments and grades in their assigned subjects. Access to the Parent Portal and guardian records is reserved for designated <strong>Class Teachers</strong> and <strong>School Leadership</strong>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       
@@ -123,7 +165,14 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
           : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
       }`}>
         <div className="flex items-center gap-2 font-medium">
-          {canEditParent ? (
+          {isTeacher ? (
+            <>
+              <ShieldCheck className="h-4 w-4 text-indigo-600 shrink-0" />
+              <span>
+                <strong>Class Teacher Guardian Registry:</strong> Authorized for <strong>{teacherClassTeacherClasses.join(', ')}</strong>. Displaying verified parents and contact records exclusively for students in your assigned class.
+              </span>
+            </>
+          ) : canEditParent ? (
             <>
               <ShieldCheck className="h-4 w-4 text-indigo-600 shrink-0" />
               <span>
@@ -140,7 +189,7 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          Role: {currentRole}
+          {isTeacher ? `Class Teacher (${teacherClassTeacherClasses.join(', ')})` : `Role: ${currentRole}`}
         </span>
       </div>
 
@@ -189,7 +238,7 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
 
         {/* Child Selector with Dropdown and Search Button */}
         <div className="flex items-center gap-2">
-          {!isPrincipalContext && !isHeadTeacherContext && (
+          {!isPrincipalContext && !isHeadTeacherContext && !isTeacher && (
             <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold mr-2">
               <button
                 type="button"

@@ -27,13 +27,18 @@ import {
 } from 'lucide-react';
 import { Student, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import { useRealTime } from '../../context/RealTimeContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   SECONDARY_CLASSES,
   PRIMARY_CLASSES,
   isSecondaryClass,
   isPrimaryClass,
   SECONDARY_SCHOOL_NAME,
-  PRIMARY_SCHOOL_NAME
+  PRIMARY_SCHOOL_NAME,
+  resolveCurrentTeacher,
+  getTeacherClassTeacherAssignedClasses,
+  isTeacherSubjectOnly
 } from '../../utils/sectionHelpers';
 
 interface StudentManagementProps {
@@ -53,8 +58,28 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   searchQuery: externalSearch,
   currentRole = 'super_admin'
 }) => {
+  const { classes, teachers } = useRealTime();
+  const { currentUser } = useAuth();
+  const isTeacher = currentRole === 'teacher';
+
+  const currentTeacher = React.useMemo(() => {
+    return resolveCurrentTeacher(currentUser, teachers);
+  }, [currentUser, teachers]);
+
+  const teacherClassTeacherClasses = React.useMemo(() => {
+    if (!isTeacher) return [];
+    return getTeacherClassTeacherAssignedClasses(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
+
+  const isSubjectOnlyTeacher = React.useMemo(() => {
+    if (!isTeacher) return false;
+    return isTeacherSubjectOnly(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [classFilter, setClassFilter] = useState('All');
+  const [classFilter, setClassFilter] = useState(
+    isTeacher && teacherClassTeacherClasses.length > 0 ? teacherClassTeacherClasses[0] : 'All'
+  );
   const [categoryFilter, setCategoryFilter] = useState('All'); // All, Boarders, Bus, Debtors
   const [sectionFilter, setSectionFilter] = useState<'All' | 'Secondary' | 'Primary'>('All');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -68,7 +93,9 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
   // Default class options based on role
   const availableClassOptions =
-    currentRole === 'principal'
+    isTeacher
+      ? teacherClassTeacherClasses
+      : currentRole === 'principal'
       ? SECONDARY_CLASSES
       : currentRole === 'head_teacher'
       ? PRIMARY_CLASSES
@@ -78,7 +105,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const [newFirstName, setNewFirstName] = useState('');
   const [newLastName, setNewLastName] = useState('');
   const [newClassGroup, setNewClassGroup] = useState(
-    currentRole === 'head_teacher' ? 'Basic 1' : 'Grade 10 A'
+    isTeacher && teacherClassTeacherClasses.length > 0
+      ? teacherClassTeacherClasses[0]
+      : currentRole === 'head_teacher'
+      ? 'Basic 1'
+      : 'Grade 10 A'
   );
   const [newGender, setNewGender] = useState<'Male' | 'Female'>('Male');
   const [newParentName, setNewParentName] = useState('');
@@ -88,11 +119,20 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const [newIsBusEnrolled, setNewIsBusEnrolled] = useState(false);
 
   // Permission Check: Administrator, School Principal, Head Teacher have full access
+  // Class teacher has access to manage their assigned class
   const hasFullAccess = ['super_admin', 'pioneer', 'principal', 'head_teacher'].includes(currentRole);
+  const canManageStudents = hasFullAccess || (isTeacher && !isSubjectOnlyTeacher);
 
   const effectiveSearch = externalSearch || searchTerm;
 
   const filteredStudents = students.filter((std) => {
+    // Teacher assigned to a class as class teacher should only have access to the class assigned to him/her
+    if (isTeacher) {
+      if (!teacherClassTeacherClasses.includes(std.classGroup)) {
+        return false;
+      }
+    }
+
     // Role based strict section filtering
     if (currentRole === 'principal' && !isSecondaryClass(std.classGroup)) {
       return false;
@@ -102,7 +142,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     }
 
     // Admin section toggle
-    if (currentRole !== 'principal' && currentRole !== 'head_teacher') {
+    if (currentRole !== 'principal' && currentRole !== 'head_teacher' && !isTeacher) {
       if (sectionFilter === 'Secondary' && !isSecondaryClass(std.classGroup)) return false;
       if (sectionFilter === 'Primary' && !isPrimaryClass(std.classGroup)) return false;
     }
@@ -200,16 +240,41 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const isPrincipal = currentRole === 'principal';
   const isHeadTeacher = currentRole === 'head_teacher';
 
+  if (isSubjectOnlyTeacher) {
+    return (
+      <div className="space-y-6">
+        <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-2xl mx-auto space-y-4 my-8">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600">
+            <Lock className="w-7 h-7" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">
+            Student Directory Access Restricted
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
+            You are authenticated as a <strong>Subject Teacher</strong> ({currentTeacher?.subjects?.join(', ') || 'Allocated Subjects'}). Subject teachers have direct access exclusively to academic grades and scores in their allocated subjects. Access to the Student Directory is strictly reserved for designated <strong>Class Teachers</strong> and <strong>School Leadership</strong>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Role Permission Banner */}
       <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs ${
-        hasFullAccess
+        hasFullAccess || isTeacher
           ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
           : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
       }`}>
         <div className="flex items-center gap-2 font-medium">
-          {hasFullAccess ? (
+          {isTeacher ? (
+            <>
+              <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Class Teacher Directory Access:</strong> You are assigned as Class Teacher for <strong>{teacherClassTeacherClasses.join(', ')}</strong>. You have exclusive directory access to students in your assigned class.
+              </span>
+            </>
+          ) : hasFullAccess ? (
             <>
               <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>
@@ -234,7 +299,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           )}
         </div>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
+          {isTeacher ? `Class Teacher (${teacherClassTeacherClasses.join(', ')})` : isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
         </span>
       </div>
 
@@ -242,7 +307,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            {isPrincipal ? (
+            {isTeacher ? (
+              <>
+                <Users className="h-5 w-5 text-emerald-600" /> Class {teacherClassTeacherClasses.join(', ')} Student Directory
+              </>
+            ) : isPrincipal ? (
               <>
                 <GraduationCap className="h-5 w-5 text-indigo-600" /> Secondary School Student Directory & Parents
               </>
@@ -257,7 +326,9 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             )}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {isPrincipal
+            {isTeacher
+              ? `Manage student information and guardian contact details for your assigned class (${teacherClassTeacherClasses.join(', ')}).`
+              : isPrincipal
               ? 'Manage Junior Secondary (JSS 1-3) & Senior Secondary (SSS 1-3 / Grade 10-12) students, hostels, and verified parents.'
               : isHeadTeacher
               ? 'Manage Early Years (Nursery, Reception, Kindergarten, Nursery 1-2) and Primary (Basic 1 to Basic 5) pupils and parents.'
@@ -265,7 +336,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </p>
         </div>
 
-        {hasFullAccess && (
+        {canManageStudents && (
           <button
             onClick={() => {
               setIsCustomClass(false);
@@ -274,13 +345,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             }}
             className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 shrink-0"
           >
-            <Plus className="h-4 w-4" /> {isPrincipal ? 'Enrol Secondary Student' : isHeadTeacher ? 'Enrol Primary / Nursery Pupil' : 'Enrol New Student'}
+            <Plus className="h-4 w-4" /> {isTeacher ? `Add Student to ${teacherClassTeacherClasses[0] || 'Class'}` : isPrincipal ? 'Enrol Secondary Student' : isHeadTeacher ? 'Enrol Primary / Nursery Pupil' : 'Enrol New Student'}
           </button>
         )}
       </div>
 
       {/* Admin Section Tabs if not restricted by role */}
-      {!isPrincipal && !isHeadTeacher && (
+      {!isPrincipal && !isHeadTeacher && !isTeacher && (
         <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 w-fit">
           <button
             onClick={() => setSectionFilter('All')}
@@ -336,10 +407,19 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-bold text-slate-500 shrink-0">Class:</span>
             <DropdownWithSearch
-              options={[
-                { value: 'All', label: 'All Classes' },
-                ...availableClassOptions.map((c) => ({ value: c, label: c }))
-              ]}
+              options={
+                isTeacher
+                  ? teacherClassTeacherClasses.length > 1
+                    ? [
+                        { value: 'All', label: 'All Assigned Classes' },
+                        ...teacherClassTeacherClasses.map((c) => ({ value: c, label: c }))
+                      ]
+                    : teacherClassTeacherClasses.map((c) => ({ value: c, label: c }))
+                  : [
+                      { value: 'All', label: 'All Classes' },
+                      ...availableClassOptions.map((c) => ({ value: c, label: c }))
+                    ]
+              }
               value={classFilter}
               onChange={(val) => setClassFilter(val)}
               placeholder="Select class..."
