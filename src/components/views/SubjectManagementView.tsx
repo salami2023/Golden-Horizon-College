@@ -27,8 +27,13 @@ import { useRealTime } from '../../context/RealTimeContext';
 import {
   isPrimaryClass,
   isSecondaryClass,
+  isJuniorSecondaryClass,
+  isSeniorSecondaryClass,
+  getSubjectSecondaryTier,
   SECONDARY_CLASSES,
   PRIMARY_CLASSES,
+  JUNIOR_SECONDARY_CLASSES,
+  SENIOR_SECONDARY_CLASSES,
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
   getAcademicSessionAndTerm
@@ -137,6 +142,8 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
   const [formName, setFormName] = useState('');
   const [formCode, setFormCode] = useState('');
   const [formSection, setFormSection] = useState<'Primary' | 'Secondary'>('Secondary');
+  const [formSecondaryTier, setFormSecondaryTier] = useState<'Junior Secondary' | 'Senior Secondary' | 'All Secondary'>('Junior Secondary');
+  const [secondaryTierFilter, setSecondaryTierFilter] = useState<'All' | 'Junior Secondary' | 'Senior Secondary'>('All');
   const [formCategory, setFormCategory] = useState('Core');
   const [formWeeklyPeriods, setFormWeeklyPeriods] = useState<number>(4);
   const [formIsCompulsory, setFormIsCompulsory] = useState(true);
@@ -197,9 +204,15 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
 
       const matchesCat = selectedCategory === 'All' || sub.category === selectedCategory;
 
-      return matchesSearch && matchesCat;
+      const matchesTier =
+        activeSection !== 'Secondary' ||
+        secondaryTierFilter === 'All' ||
+        getSubjectSecondaryTier(sub) === secondaryTierFilter ||
+        getSubjectSecondaryTier(sub) === 'All Secondary';
+
+      return matchesSearch && matchesCat && matchesTier;
     });
-  }, [sectionSubjects, searchQuery, selectedCategory]);
+  }, [sectionSubjects, searchQuery, selectedCategory, activeSection, secondaryTierFilter]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -226,6 +239,10 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
     setFormCode('');
     const defaultSec = activeSection === 'Primary' ? 'Primary' : 'Secondary';
     setFormSection(defaultSec);
+    const resolvedTier: 'Junior Secondary' | 'Senior Secondary' | 'All Secondary' = targetClass
+      ? (isJuniorSecondaryClass(targetClass) ? 'Junior Secondary' : isSeniorSecondaryClass(targetClass) ? 'Senior Secondary' : 'Junior Secondary')
+      : (selectedClass && isSeniorSecondaryClass(selectedClass) ? 'Senior Secondary' : 'Junior Secondary');
+    setFormSecondaryTier(resolvedTier);
     setFormCategory('Core');
     setFormWeeklyPeriods(4);
     setFormIsCompulsory(true);
@@ -241,6 +258,7 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
     setFormName(subject.name);
     setFormCode(subject.code);
     setFormSection(subject.section);
+    setFormSecondaryTier(getSubjectSecondaryTier(subject));
     setFormCategory(subject.category);
     setFormWeeklyPeriods(subject.weeklyPeriods || 4);
     setFormIsCompulsory(subject.isCompulsory);
@@ -257,9 +275,18 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
     }
 
     // Auto-generate code if empty
+    const codeSuffix =
+      formSection === 'Primary'
+        ? 'PRI'
+        : formSecondaryTier === 'Junior Secondary'
+        ? 'JSS'
+        : formSecondaryTier === 'Senior Secondary'
+        ? 'SSS'
+        : 'SEC';
+
     const code = formCode.trim()
       ? formCode.trim().toUpperCase()
-      : `${formName.substring(0, 3).toUpperCase()}-${formSection === 'Primary' ? 'PRI' : 'SEC'}`;
+      : `${formName.substring(0, 3).toUpperCase()}-${codeSuffix}`;
 
     // Validate section peculiarity
     if (isPrincipal && formSection !== 'Secondary') {
@@ -276,6 +303,7 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
       name: formName.trim(),
       code,
       section: formSection,
+      secondaryTier: formSection === 'Secondary' ? formSecondaryTier : undefined,
       category: formCategory,
       classLevels: formApplicableClasses,
       applicableClasses: formApplicableClasses,
@@ -316,6 +344,7 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
       ...editingSubject,
       name: formName.trim(),
       code: formCode.trim().toUpperCase(),
+      secondaryTier: editingSubject.section === 'Secondary' ? formSecondaryTier : undefined,
       category: formCategory,
       weeklyPeriods: Number(formWeeklyPeriods) || 4,
       isCompulsory: formIsCompulsory,
@@ -822,6 +851,44 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
                   ))}
                 </select>
               </div>
+
+              {activeSection === 'Secondary' && (
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setSecondaryTierFilter('All')}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${
+                      secondaryTierFilter === 'All'
+                        ? 'bg-white text-slate-900 shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    All Secondary
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSecondaryTierFilter('Junior Secondary')}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${
+                      secondaryTierFilter === 'Junior Secondary'
+                        ? 'bg-white text-blue-700 shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Junior (JSS)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSecondaryTierFilter('Senior Secondary')}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${
+                      secondaryTierFilter === 'Senior Secondary'
+                        ? 'bg-white text-indigo-700 shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Senior (SSS)
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="text-xs text-gray-500">
@@ -836,7 +903,7 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
                 <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500 font-semibold">
                   <tr>
                     <th className="px-5 py-3">Subject Name & Code</th>
-                    <th className="px-4 py-3">Section</th>
+                    <th className="px-4 py-3">Section & Tier</th>
                     <th className="px-4 py-3">Category</th>
                     <th className="px-4 py-3">Periods / Wk</th>
                     <th className="px-4 py-3">Compulsory</th>
@@ -853,6 +920,7 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
                     </tr>
                   ) : (
                     filteredCatalogSubjects.map((sub) => {
+                      const tier = getSubjectSecondaryTier(sub);
                       return (
                         <tr key={sub.id} className="hover:bg-gray-50/80 transition-colors">
                           <td className="px-5 py-4">
@@ -863,15 +931,34 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
                             )}
                           </td>
                           <td className="px-4 py-4">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                                sub.section === 'Primary'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : 'bg-blue-50 text-blue-700 border border-blue-200'
-                              }`}
-                            >
-                              {sub.section}
-                            </span>
+                            <div className="flex flex-col gap-1 items-start">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                                  sub.section === 'Primary'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                }`}
+                              >
+                                {sub.section}
+                              </span>
+                              {sub.section === 'Secondary' && (
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                    tier === 'Junior Secondary'
+                                      ? 'bg-sky-50 text-sky-800 border-sky-200'
+                                      : tier === 'Senior Secondary'
+                                      ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                                  }`}
+                                >
+                                  {tier === 'Junior Secondary'
+                                    ? 'Junior (JSS)'
+                                    : tier === 'Senior Secondary'
+                                    ? 'Senior (SSS)'
+                                    : 'All Secondary'}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-4">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
@@ -1016,7 +1103,15 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
                   <select
                     disabled={!isSuperAdminOrPioneer}
                     value={formSection}
-                    onChange={(e) => setFormSection(e.target.value as 'Primary' | 'Secondary')}
+                    onChange={(e) => {
+                      const sec = e.target.value as 'Primary' | 'Secondary';
+                      setFormSection(sec);
+                      if (sec === 'Secondary') {
+                        setFormApplicableClasses(availableClassNames.filter(isJuniorSecondaryClass));
+                      } else {
+                        setFormApplicableClasses([]);
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 disabled:opacity-80"
                   >
                     <option value="Secondary">Secondary (College)</option>
@@ -1048,6 +1143,73 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
                 </div>
               </div>
 
+              {/* Secondary Tier Selector: Junior vs Senior Secondary */}
+              {formSection === 'Secondary' && (
+                <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-blue-900">
+                      Secondary Level / Tier <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-blue-700 font-medium">Choose Junior or Senior level</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormSecondaryTier('Junior Secondary');
+                        const jss = availableClassNames.filter(isJuniorSecondaryClass);
+                        setFormApplicableClasses(jss);
+                      }}
+                      className={`py-2 px-2.5 rounded-lg text-xs font-bold border flex flex-col items-center gap-0.5 transition-all ${
+                        formSecondaryTier === 'Junior Secondary'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <span>Junior Secondary</span>
+                      <span className={`text-[10px] font-normal ${formSecondaryTier === 'Junior Secondary' ? 'text-blue-100' : 'text-gray-400'}`}>
+                        JSS 1 – JSS 3
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormSecondaryTier('Senior Secondary');
+                        const sss = availableClassNames.filter(isSeniorSecondaryClass);
+                        setFormApplicableClasses(sss);
+                      }}
+                      className={`py-2 px-2.5 rounded-lg text-xs font-bold border flex flex-col items-center gap-0.5 transition-all ${
+                        formSecondaryTier === 'Senior Secondary'
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+                      }`}
+                    >
+                      <span>Senior Secondary</span>
+                      <span className={`text-[10px] font-normal ${formSecondaryTier === 'Senior Secondary' ? 'text-indigo-100' : 'text-gray-400'}`}>
+                        SSS 1 – SSS 3
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormSecondaryTier('All Secondary');
+                        setFormApplicableClasses([...availableClassNames]);
+                      }}
+                      className={`py-2 px-2.5 rounded-lg text-xs font-bold border flex flex-col items-center gap-0.5 transition-all ${
+                        formSecondaryTier === 'All Secondary'
+                          ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <span>All Secondary</span>
+                      <span className={`text-[10px] font-normal ${formSecondaryTier === 'All Secondary' ? 'text-slate-200' : 'text-gray-400'}`}>
+                        Both JSS & SSS
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <input
                   type="checkbox"
@@ -1062,11 +1224,48 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                  Assign Immediately to Classes ({formSection}):
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700">
+                    Assign Immediately to Classes ({formSection}
+                    {formSection === 'Secondary' ? ` • ${formSecondaryTier}` : ''}):
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetClasses =
+                          formSection === 'Primary'
+                            ? availableClassNames
+                            : formSecondaryTier === 'Junior Secondary'
+                            ? availableClassNames.filter(isJuniorSecondaryClass)
+                            : formSecondaryTier === 'Senior Secondary'
+                            ? availableClassNames.filter(isSeniorSecondaryClass)
+                            : availableClassNames;
+                        setFormApplicableClasses(targetClasses);
+                      }}
+                      className="text-[11px] text-blue-600 font-semibold hover:underline"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-gray-300 text-xs">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormApplicableClasses([])}
+                      className="text-[11px] text-gray-500 font-semibold hover:underline"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
                 <div className="max-h-36 overflow-y-auto p-2 bg-gray-50 border border-gray-200 rounded-xl grid grid-cols-2 gap-1.5">
-                  {availableClassNames.map((className) => {
+                  {(formSection === 'Primary'
+                    ? availableClassNames
+                    : formSecondaryTier === 'Junior Secondary'
+                    ? availableClassNames.filter(isJuniorSecondaryClass)
+                    : formSecondaryTier === 'Senior Secondary'
+                    ? availableClassNames.filter(isSeniorSecondaryClass)
+                    : availableClassNames
+                  ).map((className) => {
                     const isChecked = formApplicableClasses.includes(className);
                     return (
                       <button
@@ -1213,6 +1412,62 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
                 </select>
               </div>
 
+              {/* Secondary Tier Selector: Junior vs Senior Secondary */}
+              {editingSubject.section === 'Secondary' && (
+                <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-blue-900">
+                      Secondary Level / Tier <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-blue-700 font-medium">Choose Junior or Senior level</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormSecondaryTier('Junior Secondary')}
+                      className={`py-2 px-2.5 rounded-lg text-xs font-bold border flex flex-col items-center gap-0.5 transition-all ${
+                        formSecondaryTier === 'Junior Secondary'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <span>Junior Secondary</span>
+                      <span className={`text-[10px] font-normal ${formSecondaryTier === 'Junior Secondary' ? 'text-blue-100' : 'text-gray-400'}`}>
+                        JSS 1 – JSS 3
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormSecondaryTier('Senior Secondary')}
+                      className={`py-2 px-2.5 rounded-lg text-xs font-bold border flex flex-col items-center gap-0.5 transition-all ${
+                        formSecondaryTier === 'Senior Secondary'
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+                      }`}
+                    >
+                      <span>Senior Secondary</span>
+                      <span className={`text-[10px] font-normal ${formSecondaryTier === 'Senior Secondary' ? 'text-indigo-100' : 'text-gray-400'}`}>
+                        SSS 1 – SSS 3
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormSecondaryTier('All Secondary')}
+                      className={`py-2 px-2.5 rounded-lg text-xs font-bold border flex flex-col items-center gap-0.5 transition-all ${
+                        formSecondaryTier === 'All Secondary'
+                          ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <span>All Secondary</span>
+                      <span className={`text-[10px] font-normal ${formSecondaryTier === 'All Secondary' ? 'text-slate-200' : 'text-gray-400'}`}>
+                        Both JSS & SSS
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <input
                   type="checkbox"
@@ -1227,11 +1482,48 @@ export const SubjectManagementView: React.FC<SubjectManagementViewProps> = ({ cu
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                  Classes Assigned to ({formSection}):
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700">
+                    Classes Assigned to ({formSection}
+                    {formSection === 'Secondary' ? ` • ${formSecondaryTier}` : ''}):
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetClasses =
+                          formSection === 'Primary'
+                            ? availableClassNames
+                            : formSecondaryTier === 'Junior Secondary'
+                            ? availableClassNames.filter(isJuniorSecondaryClass)
+                            : formSecondaryTier === 'Senior Secondary'
+                            ? availableClassNames.filter(isSeniorSecondaryClass)
+                            : availableClassNames;
+                        setFormApplicableClasses(targetClasses);
+                      }}
+                      className="text-[11px] text-blue-600 font-semibold hover:underline"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-gray-300 text-xs">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormApplicableClasses([])}
+                      className="text-[11px] text-gray-500 font-semibold hover:underline"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
                 <div className="max-h-36 overflow-y-auto p-2 bg-gray-50 border border-gray-200 rounded-xl grid grid-cols-2 gap-1.5">
-                  {availableClassNames.map((className) => {
+                  {(formSection === 'Primary'
+                    ? availableClassNames
+                    : formSecondaryTier === 'Junior Secondary'
+                    ? availableClassNames.filter(isJuniorSecondaryClass)
+                    : formSecondaryTier === 'Senior Secondary'
+                    ? availableClassNames.filter(isSeniorSecondaryClass)
+                    : availableClassNames
+                  ).map((className) => {
                     const isChecked = formApplicableClasses.includes(className);
                     return (
                       <button

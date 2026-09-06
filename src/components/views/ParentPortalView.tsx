@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   HeartHandshake,
   UserCheck,
@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 import { Student, StudentReportCard, Invoice, UserRole } from '../../types';
 import { useRealTime } from '../../context/RealTimeContext';
+import { useAuth } from '../../context/AuthContext';
 import { DropdownWithSearch } from '../DropdownWithSearch';
 import {
   isPrimaryClass,
+  isSecondaryClass,
   SECONDARY_SCHOOL_NAME,
   PRIMARY_SCHOOL_NAME,
   SCHOOL_CONTACT_DETAILS
@@ -45,15 +47,40 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
   currentRole = 'parent'
 }) => {
   const { schoolSettings } = useRealTime();
-  const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
+  const { currentUser } = useAuth();
+
+  const isPrincipalContext = currentRole === 'principal' || currentUser?.role === 'principal';
+  const isHeadTeacherContext = currentRole === 'head_teacher' || currentUser?.role === 'head_teacher';
+
+  const [sectionFilter, setSectionFilter] = useState<'all' | 'secondary' | 'primary'>(
+    isPrincipalContext ? 'secondary' : isHeadTeacherContext ? 'primary' : 'all'
+  );
+
+  const availableStudents = useMemo(() => {
+    if (isPrincipalContext) {
+      return students.filter((s) => isSecondaryClass(s.classGroup));
+    }
+    if (isHeadTeacherContext) {
+      return students.filter((s) => isPrimaryClass(s.classGroup));
+    }
+    if (sectionFilter === 'secondary') {
+      return students.filter((s) => isSecondaryClass(s.classGroup));
+    }
+    if (sectionFilter === 'primary') {
+      return students.filter((s) => isPrimaryClass(s.classGroup));
+    }
+    return students;
+  }, [students, isPrincipalContext, isHeadTeacherContext, sectionFilter]);
+
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(availableStudents[0]?.id || '');
   const [isEditingParent, setIsEditingParent] = useState(false);
 
   // RBAC Permission Check: Administrator, School Principal, Head Teacher, and Parent have permission to update parent details
   const canEditParent = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'parent'].includes(currentRole);
 
-  const activeStudent = students.find((s) => s.id === selectedStudentId) || students[0];
-  const activeReport = reportCards.find((r) => r.studentId === activeStudent?.id);
-  const activeInvoice = invoices.find((i) => i.studentId === activeStudent?.id);
+  const activeStudent = availableStudents.find((s) => s.id === selectedStudentId) || availableStudents[0] || null;
+  const activeReport = activeStudent ? reportCards.find((r) => r.studentId === activeStudent.id) : null;
+  const activeInvoice = activeStudent ? invoices.find((i) => i.studentId === activeStudent.id) : null;
 
   // Parent Edit State
   const [guardianName, setGuardianName] = useState(activeStudent?.parentName || '');
@@ -162,8 +189,45 @@ export const ParentPortalView: React.FC<ParentPortalViewProps> = ({
 
         {/* Child Selector with Dropdown and Search Button */}
         <div className="flex items-center gap-2">
+          {!isPrincipalContext && !isHeadTeacherContext && (
+            <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold mr-2">
+              <button
+                type="button"
+                onClick={() => setSectionFilter('all')}
+                className={`px-2.5 py-1 rounded-lg transition ${
+                  sectionFilter === 'all'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setSectionFilter('secondary')}
+                className={`px-2.5 py-1 rounded-lg transition ${
+                  sectionFilter === 'secondary'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Secondary
+              </button>
+              <button
+                type="button"
+                onClick={() => setSectionFilter('primary')}
+                className={`px-2.5 py-1 rounded-lg transition ${
+                  sectionFilter === 'primary'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Primary
+              </button>
+            </div>
+          )}
           <DropdownWithSearch
-            options={students.map((std) => ({
+            options={availableStudents.map((std) => ({
               value: std.id,
               label: `${std.firstName} ${std.lastName}`,
               sublabel: `${std.admissionNo} • ${std.classGroup}`,

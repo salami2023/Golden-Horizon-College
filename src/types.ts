@@ -55,6 +55,7 @@ export interface Teacher {
   phone: string;
   qualification: string;
   subjects: string[];
+  secondaryTier?: 'Junior Secondary' | 'Senior Secondary' | 'All Secondary';
   formClass?: string; // Class they manage as Form Teacher
   assignedClasses?: string[]; // Classes assigned to this academic staff member
   avatar: string;
@@ -312,6 +313,7 @@ export interface SchoolSubject {
   name: string;
   code: string;
   section: 'Secondary' | 'Primary';
+  secondaryTier?: 'Junior Secondary' | 'Senior Secondary' | 'All Secondary';
   category: string;
   classLevels?: string[];
   applicableClasses: string[];

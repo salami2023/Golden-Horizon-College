@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Laptop,
   Play,
@@ -20,17 +20,25 @@ import {
   Save,
   X,
   GraduationCap,
-  Baby
+  Baby,
+  BookOpen
 } from 'lucide-react';
 import { CBTExam, CBTQuestion, UserRole } from '../../types';
 import { DropdownWithSearch } from '../DropdownWithSearch';
+import { useRealTime } from '../../context/RealTimeContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   SECONDARY_CLASSES,
   PRIMARY_CLASSES,
   SECONDARY_SUBJECTS,
   PRIMARY_SUBJECTS,
   isSecondaryClass,
-  isPrimaryClass
+  isPrimaryClass,
+  resolveCurrentTeacher,
+  isTeacherAssignedToClass,
+  isTeacherClassTeacher,
+  isTeacherAllocatedToSubject,
+  getTeacherAssignedClassNames
 } from '../../utils/sectionHelpers';
 
 interface CBTExamManagerProps {
@@ -48,8 +56,22 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
   onDeleteExam,
   currentRole = 'teacher'
 }) => {
+  const { classes, teachers } = useRealTime();
+  const { currentUser } = useAuth();
+  const isTeacher = currentRole === 'teacher';
   const isPrincipal = currentRole === 'principal';
   const isHeadTeacher = currentRole === 'head_teacher';
+
+  // Resolved teacher profile for authenticated user
+  const currentTeacher = useMemo(() => {
+    return resolveCurrentTeacher(currentUser, teachers);
+  }, [currentUser, teachers]);
+
+  // Classes assigned to this teacher (Form class + subject classes)
+  const teacherAssignedClassNames = useMemo(() => {
+    if (!isTeacher) return [];
+    return getTeacherAssignedClassNames(currentTeacher, classes, currentUser);
+  }, [isTeacher, currentTeacher, classes, currentUser]);
 
   const [activeTestExam, setActiveTestExam] = useState<CBTExam | null>(null);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -58,17 +80,30 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
   const [testScore, setTestScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
 
-  const availableSubjects = isPrincipal
-    ? SECONDARY_SUBJECTS.map((s) => s.name)
-    : isHeadTeacher
-    ? PRIMARY_SUBJECTS.map((s) => s.name)
-    : [...SECONDARY_SUBJECTS.map((s) => s.name), ...PRIMARY_SUBJECTS.map((s) => s.name)];
+  const allCurriculumSubjects = useMemo(() => {
+    if (isPrincipal) return SECONDARY_SUBJECTS.map((s) => s.name);
+    if (isHeadTeacher) return PRIMARY_SUBJECTS.map((s) => s.name);
+    return [...SECONDARY_SUBJECTS.map((s) => s.name), ...PRIMARY_SUBJECTS.map((s) => s.name)];
+  }, [isPrincipal, isHeadTeacher]);
 
-  const availableClasses = isPrincipal
-    ? SECONDARY_CLASSES
-    : isHeadTeacher
-    ? PRIMARY_CLASSES
-    : [...SECONDARY_CLASSES, ...PRIMARY_CLASSES];
+  const availableSubjects = useMemo(() => {
+    if (isTeacher) {
+      if (currentTeacher?.subjects && currentTeacher.subjects.length > 0) {
+        return currentTeacher.subjects;
+      }
+      return allCurriculumSubjects;
+    }
+    return allCurriculumSubjects;
+  }, [isTeacher, currentTeacher, allCurriculumSubjects]);
+
+  const availableClasses = useMemo(() => {
+    if (isTeacher) {
+      return teacherAssignedClassNames;
+    }
+    if (isPrincipal) return SECONDARY_CLASSES;
+    if (isHeadTeacher) return PRIMARY_CLASSES;
+    return [...SECONDARY_CLASSES, ...PRIMARY_CLASSES];
+  }, [isTeacher, teacherAssignedClassNames, isPrincipal, isHeadTeacher]);
 
   // AI Exam Generator Form Modal State
   const [showGenModal, setShowGenModal] = useState(false);
@@ -81,17 +116,43 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
   const [numQuestions, setNumQuestions] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Keep targetClass & subject in sync when available lists change
+  useEffect(() => {
+    if (availableClasses.length > 0 && !availableClasses.includes(targetClass)) {
+      setTargetClass(availableClasses[0]);
+    }
+  }, [availableClasses, targetClass]);
+
+  useEffect(() => {
+    if (availableSubjects.length > 0 && !availableSubjects.includes(subject)) {
+      setSubject(availableSubjects[0]);
+    }
+  }, [availableSubjects, subject]);
+
   // RBAC Permission Check: Teachers, Principal, Head Teacher, Admin have permission to create/update/edit CBT exams
   const canManageCBT = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'teacher'].includes(currentRole);
   const [selectedExamFilter, setSelectedExamFilter] = useState('All');
 
-  const filteredExams = exams.filter((exam) => {
-    if (isPrincipal && !isSecondaryClass(exam.classGroup)) return false;
-    if (isHeadTeacher && !isPrimaryClass(exam.classGroup)) return false;
+  const filteredExams = useMemo(() => {
+    return exams.filter((exam) => {
+      if (isPrincipal && !isSecondaryClass(exam.classGroup)) return false;
+      if (isHeadTeacher && !isPrimaryClass(exam.classGroup)) return false;
 
-    if (selectedExamFilter === 'All') return true;
-    return exam.id === selectedExamFilter;
-  });
+      if (isTeacher) {
+        const isClassAssigned = isTeacherAssignedToClass(currentTeacher, exam.classGroup, currentUser, classes);
+        if (!isClassAssigned) return false;
+
+        const isFormTeacher = isTeacherClassTeacher(currentTeacher, exam.classGroup, currentUser, classes);
+        const isSubjectAllocated = isTeacherAllocatedToSubject(currentTeacher, exam.subject);
+        if (!isFormTeacher && !isSubjectAllocated && currentTeacher?.subjects && currentTeacher.subjects.length > 0) {
+          return false;
+        }
+      }
+
+      if (selectedExamFilter === 'All') return true;
+      return exam.id === selectedExamFilter;
+    });
+  }, [exams, isPrincipal, isHeadTeacher, isTeacher, currentTeacher, currentUser, classes, selectedExamFilter]);
 
   // Timer Countdown Effect
   useEffect(() => {
@@ -142,6 +203,20 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
       alert('Access Denied: Only teachers and administrators can create or generate CBT exams.');
       return;
     }
+
+    if (isTeacher) {
+      if (!teacherAssignedClassNames.includes(targetClass)) {
+        alert(`Access Denied: You can only set CBT questions for classes assigned to you (${teacherAssignedClassNames.join(', ') || 'None assigned'}).`);
+        return;
+      }
+      const isFormT = isTeacherClassTeacher(currentTeacher, targetClass, currentUser, classes);
+      const isAllocatedSub = isTeacherAllocatedToSubject(currentTeacher, subject);
+      if (!isFormT && !isAllocatedSub && currentTeacher?.subjects && currentTeacher.subjects.length > 0) {
+        alert(`Access Denied: You can only set CBT assessments for subjects allocated to you (${currentTeacher.subjects.join(', ')}).`);
+        return;
+      }
+    }
+
     setIsGenerating(true);
 
     try {
@@ -199,7 +274,7 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
     <div className="space-y-6">
       
       {/* Role Permission Status Banner */}
-      <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs ${
+      <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
         canManageCBT
           ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-200'
           : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
@@ -209,15 +284,24 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
             <>
               <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
               <span>
-                {isPrincipal ? (
+                {isTeacher ? (
+                  <>
+                    <strong>Teacher CBT & E-Learning Portal:</strong> Authorized to create, set, and AI-generate questions for your assigned classes (<strong>{teacherAssignedClassNames.join(', ') || 'No classes currently assigned'}</strong>){' '}
+                    {currentTeacher?.subjects?.length ? <>and allocated subjects (<strong>{currentTeacher.subjects.join(', ')}</strong>)</> : null}.
+                  </>
+                ) : isPrincipal ? (
                   <strong>Secondary Principal CBT Portal:</strong>
                 ) : isHeadTeacher ? (
                   <strong>Primary Head Teacher CBT & Quiz Portal:</strong>
                 ) : (
                   <strong>CBT & E-Learning Authorization Active:</strong>
                 )}{' '}
-                Authorized to create, AI-generate questions, and update online CBT assessments for{' '}
-                {isPrincipal ? 'Secondary School classes' : isHeadTeacher ? 'Primary & Nursery classes' : 'all classes'}.
+                {!isTeacher && (
+                  <>
+                    Authorized to create, AI-generate questions, and update online CBT assessments for{' '}
+                    {isPrincipal ? 'Secondary School classes' : isHeadTeacher ? 'Primary & Nursery classes' : 'all classes'}.
+                  </>
+                )}
               </span>
             </>
           ) : (
@@ -229,9 +313,16 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
             </>
           )}
         </div>
-        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
-          {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
-        </span>
+        <div className="flex items-center gap-2">
+          {isTeacher && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase tracking-wider">
+              {teacherAssignedClassNames.length} Assigned {teacherAssignedClassNames.length === 1 ? 'Class' : 'Classes'}
+            </span>
+          )}
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border uppercase tracking-wider">
+            {isPrincipal ? 'Secondary Principal' : isHeadTeacher ? 'Primary Head Teacher' : `Role: ${currentRole}`}
+          </span>
+        </div>
       </div>
 
       {/* Header Bar */}
@@ -253,7 +344,9 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
             )}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {isPrincipal
+            {isTeacher
+              ? 'Create online assessments and AI-assisted syllabus question generation for your assigned classes.'
+              : isPrincipal
               ? 'Create WAEC/NECO/JAMB standard timed mock exams and secondary CBT assessments.'
               : isHeadTeacher
               ? 'Create fun interactive quizzes, basic arithmetic drills, and primary school assessments.'
@@ -264,11 +357,16 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
         {canManageCBT && (
           <button
             onClick={() => {
+              if (availableClasses.length === 0) {
+                alert('You do not have any assigned classes. Please contact administration.');
+                return;
+              }
               setSubject(availableSubjects[0] || 'Computer Studies');
               setTargetClass(availableClasses[0] || 'Grade 10 A');
               setShowGenModal(true);
             }}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition flex items-center gap-1.5 shrink-0"
+            disabled={isTeacher && availableClasses.length === 0}
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition flex items-center gap-1.5 shrink-0 disabled:opacity-50"
           >
             <Sparkles className="h-4 w-4" /> AI Generate CBT Assessment
           </button>
@@ -282,10 +380,10 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
           <DropdownWithSearch
             options={[
               { value: 'All', label: 'All CBT Assessments' },
-              ...exams.map((ex) => ({
+              ...filteredExams.map((ex) => ({
                 value: ex.id,
                 label: ex.title,
-                sublabel: `Subject: ${ex.subject} • ${ex.questions.length} Questions • ${ex.durationMinutes} mins`,
+                sublabel: `Class: ${ex.classGroup} • Subject: ${ex.subject} • ${ex.questions.length} Questions`,
                 badge: ex.status
               }))
             ]}
@@ -299,9 +397,22 @@ export const CBTExamManager: React.FC<CBTExamManagerProps> = ({
         </div>
 
         <div className="text-xs font-semibold text-slate-500">
-          Showing <strong>{filteredExams.length}</strong> of {exams.length} exams
+          Showing <strong>{filteredExams.length}</strong> {filteredExams.length === 1 ? 'exam' : 'exams'}
         </div>
       </div>
+
+      {/* Empty State when no exams */}
+      {filteredExams.length === 0 && (
+        <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+          <Laptop className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto" />
+          <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">No CBT Assessments Available</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            {isTeacher
+              ? `No assessments found for your assigned classes (${teacherAssignedClassNames.join(', ') || 'None assigned'}). Click "AI Generate CBT Assessment" to set questions for your students.`
+              : 'No CBT exams currently match this selection.'}
+          </p>
+        </div>
+      )}
 
       {/* Exam Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

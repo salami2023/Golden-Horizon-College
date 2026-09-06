@@ -21,7 +21,8 @@ import {
   Sparkles,
   Globe,
   Phone,
-  KeyRound
+  KeyRound,
+  GraduationCap
 } from 'lucide-react';
 import { UserRole, SchoolThemeConfig } from '../types';
 import { useRealTime } from '../context/RealTimeContext';
@@ -34,7 +35,8 @@ import {
   isPrimaryClass,
   isSecondaryClass,
   resolveCurrentTeacher,
-  isTeacherAssignedToClass
+  isTeacherAssignedToClass,
+  getAllowedPortalsForUser
 } from '../utils/sectionHelpers';
 
 export type ActiveTab =
@@ -52,6 +54,7 @@ export type ActiveTab =
   | 'finance'
   | 'attendance'
   | 'parent_portal'
+  | 'student_portal'
   | 'audit_logs'
   | 'settings'
   | 'account_setup';
@@ -63,6 +66,7 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   themeConfig: SchoolThemeConfig;
+  onRoleChange?: (role: UserRole) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -71,7 +75,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentRole,
   isCollapsed,
   onToggleCollapse,
-  themeConfig
+  themeConfig,
+  onRoleChange
 }) => {
   const { currentUser } = useAuth();
   const { schoolSettings, classes, teachers } = useRealTime();
@@ -83,6 +88,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const classesCount = React.useMemo(() => {
     if (!classes) return 0;
     if (currentRole === 'teacher') {
+      if (currentUser?.role === 'principal') {
+        return classes.filter((c) => c.section === 'Secondary' || isSecondaryClass(c.name)).length;
+      }
+      if (currentUser?.role === 'head_teacher') {
+        return classes.filter((c) => c.section === 'Primary' || isPrimaryClass(c.name)).length;
+      }
+      if (currentUser?.role === 'pioneer' || currentUser?.role === 'super_admin') {
+        return classes.length;
+      }
       return classes.filter((c) => isTeacherAssignedToClass(currentTeacher, c, currentUser)).length;
     }
     if (currentRole === 'head_teacher') {
@@ -93,6 +107,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
     return classes.length;
   }, [classes, currentRole, currentTeacher, currentUser]);
+
+  const allowedPortals = React.useMemo(() => {
+    return getAllowedPortalsForUser(currentUser?.role || currentRole);
+  }, [currentUser?.role, currentRole]);
 
   const navItems = [
     {
@@ -118,14 +136,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'students' as ActiveTab,
-      label: 'Student Directory',
+      label: currentRole === 'head_teacher' ? 'Primary Pupils' : currentRole === 'principal' ? 'Secondary Students' : 'Student Directory',
       icon: Users,
       roles: ['super_admin', 'pioneer', 'head_teacher', 'principal', 'teacher', 'bursar', 'finance'],
       badge: '1,248'
     },
     {
       id: 'staff' as ActiveTab,
-      label: 'Teachers & Staff',
+      label: currentRole === 'head_teacher' ? 'Primary Teachers' : currentRole === 'principal' ? 'Secondary Staff' : 'Teachers & Staff',
       icon: UserCheck,
       roles: ['super_admin', 'pioneer', 'head_teacher', 'principal'],
       badge: '84'
@@ -188,10 +206,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'parent_portal' as ActiveTab,
-      label: 'Parent Details & Portal',
+      label: currentRole === 'head_teacher' ? 'Primary Parent Portal' : currentRole === 'principal' ? 'Secondary Parent Portal' : 'Parent Portal',
       icon: HeartHandshake,
       roles: ['super_admin', 'pioneer', 'head_teacher', 'principal', 'parent', 'teacher'],
       badge: 'Portal'
+    },
+    {
+      id: 'student_portal' as ActiveTab,
+      label: currentRole === 'head_teacher' ? "Pupil's Portal (Primary)" : currentRole === 'principal' ? "Student's Portal (Secondary)" : 'Student Portal',
+      icon: GraduationCap,
+      roles: ['super_admin', 'pioneer', 'head_teacher', 'principal', 'student'],
+      badge: 'Learner'
     },
     {
       id: 'audit_logs' as ActiveTab,

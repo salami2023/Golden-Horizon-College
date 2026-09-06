@@ -41,12 +41,15 @@ import { CBTExamManager } from './components/views/CBTExamManager';
 import { FinanceDashboard } from './components/views/FinanceDashboard';
 import { AttendanceTracker } from './components/views/AttendanceTracker';
 import { ParentPortalView } from './components/views/ParentPortalView';
+import { StudentPortalView } from './components/views/StudentPortalView';
 import { SchoolSettingsView } from './components/views/SchoolSettingsView';
 import { TimetableScheduleView } from './components/views/TimetableScheduleView';
 import { HomeworkAssignmentsView } from './components/views/HomeworkAssignmentsView';
 import { TransportHostelView } from './components/views/TransportHostelView';
 import { CommunicationCenterView } from './components/views/CommunicationCenterView';
 import { AuditLogsView } from './components/views/AuditLogsView';
+import { ArrowRightLeft, ShieldCheck, Eye } from 'lucide-react';
+import { getAllowedPortalsForUser } from './utils/sectionHelpers';
 
 function AppContent() {
   const {
@@ -156,12 +159,36 @@ function AppContent() {
     }
   }, [teachers, syncTeachersWithUsers]);
 
-  // Synchronize currentRole with logged-in user role
+  // Synchronize currentRole on initial login or when authenticating as a new user
+  const lastUserIdRef = React.useRef<string | null>(null);
   useEffect(() => {
-    if (currentUser?.role && currentUser.role !== currentRole) {
+    if (currentUser && currentUser.id !== lastUserIdRef.current) {
+      lastUserIdRef.current = currentUser.id;
       setCurrentRole(currentUser.role);
     }
-  }, [currentUser?.role, setCurrentRole, currentRole]);
+  }, [currentUser, setCurrentRole]);
+
+  const allowedPortals = React.useMemo(() => {
+    return getAllowedPortalsForUser(currentUser?.role || currentRole);
+  }, [currentUser?.role, currentRole]);
+
+  const activePortalDef = allowedPortals.find((p) => p.role === currentRole);
+
+  // If role is not authorized for student portal, redirect to dashboard
+  useEffect(() => {
+    const isStudentPortalAuthorized = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'student'].includes(currentRole);
+    if (!isStudentPortalAuthorized && activeTab === 'student_portal') {
+      setActiveTab('dashboard');
+    }
+  }, [currentRole, activeTab]);
+
+  // If role is not authorized for parent portal, redirect to dashboard
+  useEffect(() => {
+    const isParentPortalAuthorized = ['super_admin', 'pioneer', 'principal', 'head_teacher', 'parent', 'teacher'].includes(currentRole);
+    if (!isParentPortalAuthorized && activeTab === 'parent_portal') {
+      setActiveTab('dashboard');
+    }
+  }, [currentRole, activeTab]);
 
   // If no user is authenticated, render the dedicated Login Page
   if (!currentUser) {
@@ -191,6 +218,7 @@ function AppContent() {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           themeConfig={themeConfig}
+          onRoleChange={setCurrentRole}
         />
 
         {/* Main Content Stage */}
@@ -200,6 +228,28 @@ function AppContent() {
               themeConfig.containerWidth === 'boxed' ? 'max-w-7xl' : 'w-full'
             }`}
           >
+            {/* Cross-Portal Viewing Indicator Banner */}
+            {currentUser && currentRole !== currentUser.role && (
+              <div className="mb-5 p-3.5 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/95 dark:bg-amber-950/60 text-amber-950 dark:text-amber-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-fadeIn">
+                <div className="flex items-center gap-2.5 text-xs">
+                  <ArrowRightLeft className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>
+                    Currently viewing <strong>{activePortalDef?.title || currentRole}</strong> • Logged in as <strong>{currentUser.name}</strong> ({currentUser.role.replace('_', ' ')})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setCurrentRole(currentUser.role);
+                      setActiveTab('dashboard');
+                    }}
+                    className="px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition shadow-xs cursor-pointer"
+                  >
+                    Return to {currentUser.role.replace('_', ' ')} Portal
+                  </button>
+                </div>
+              </div>
+            )}
             {activeTab === 'dashboard' && (
               <DashboardOverview
                 students={students}
@@ -350,6 +400,20 @@ function AppContent() {
                 invoices={invoices}
                 onUpdateStudent={(s) => updateStudent(s, actor)}
                 currentRole={currentRole}
+              />
+            )}
+
+            {activeTab === 'student_portal' && (
+              <StudentPortalView
+                students={students}
+                reportCards={reportCards}
+                cbtExams={cbtExams}
+                homeworkList={homeworkList}
+                timetable={timetable}
+                invoices={invoices}
+                currentRole={currentRole}
+                onNavigate={setActiveTab}
+                schoolSettings={schoolSettings}
               />
             )}
 
